@@ -1,0 +1,26 @@
+[tool.poetry]
+name        = "assessors"
+version     = "0.1.0"
+description = ""
+authors     = ["Wout Schellaert <wout.schellaert@gmail.com>"]
+
+[tool.poetry.dependencies]
+python         = "^3.9"
+tensorflow-gpu = "2.5"
+
+[tool.poetry.dev-dependencies]
+mypy       = "^0.910"
+autopep8   = "^1.5.7"
+pylint     = "^2.9.6"
+jupyterlab = "^3.1.1"
+ipykernel  = "^6.0.3"
+nbdime     = "^3.1.0"
+poethepoet = "^0.10.0"
+
+[build-system]
+requires      = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+# https://github.com/nat-n/poethepoet
+[tool.poe.tasks]
+jpt = { shell = "jupyter lab --no-browser --port=8888" }
