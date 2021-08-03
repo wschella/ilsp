@@ -86,7 +86,7 @@ python-versions = ">=3.5"
 name = "attrs"
 version = "21.2.0"
 description = "Classes Without Boilerplate"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
@@ -182,7 +182,7 @@ unicode_backport = ["unicodedata2"]
 name = "colorama"
 version = "0.4.4"
 description = "Cross-platform colored terminal text."
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
@@ -211,6 +211,17 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
+name = "dill"
+version = "0.3.4"
+description = "serialize all of python"
+category = "main"
+optional = false
+python-versions = ">=2.7, !=3.0.*"
+
+[package.extras]
+graph = ["objgraph (>=1.7.2)"]
+
+[[package]]
 name = "entrypoints"
 version = "0.3"
 description = "Discover and load entry points from installed packages."
@@ -225,6 +236,14 @@ description = "The FlatBuffers serialization format for Python"
 category = "main"
 optional = false
 python-versions = "*"
+
+[[package]]
+name = "future"
+version = "0.18.2"
+description = "Clean single-source support for Python 3 and 2"
+category = "main"
+optional = false
+python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
 
 [[package]]
 name = "gast"
@@ -301,6 +320,20 @@ python-versions = "*"
 
 [package.dependencies]
 six = "*"
+
+[[package]]
+name = "googleapis-common-protos"
+version = "1.53.0"
+description = "Common protobufs used in Google APIs"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+protobuf = ">=3.12.0"
+
+[package.extras]
+grpc = ["grpcio (>=1.0.0)"]
 
 [[package]]
 name = "grpcio"
@@ -959,6 +992,20 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 twisted = ["twisted"]
 
 [[package]]
+name = "promise"
+version = "2.3"
+description = "Promises/A+ implementation for Python"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+six = "*"
+
+[package.extras]
+test = ["pytest (>=2.7.3)", "pytest-cov", "coveralls", "futures", "pytest-benchmark", "mock"]
+
+[[package]]
 name = "prompt-toolkit"
 version = "3.0.19"
 description = "Library for building powerful interactive command lines in Python"
@@ -1246,6 +1293,57 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "tensorflow-datasets"
+version = "4.4.0"
+description = "tensorflow/datasets is a library of datasets ready to use with TensorFlow."
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+absl-py = "*"
+attrs = ">=18.1.0"
+dill = "*"
+future = "*"
+numpy = "*"
+promise = "*"
+protobuf = ">=3.12.2"
+requests = ">=2.19.0"
+six = "*"
+tensorflow-metadata = "*"
+termcolor = "*"
+tqdm = "*"
+
+[package.extras]
+aflw2k3d = ["scipy"]
+c4 = ["apache-beam", "gcld3", "langdetect", "nltk", "tldextract"]
+cats_vs_dogs = ["matplotlib"]
+colorectal_histology = ["pillow"]
+common_voice = ["pydub"]
+dev = ["jupyter", "pytest", "pytest-xdist", "pandas", "pydub", "apache-beam", "pyyaml", "pylint (>=2.6.0)", "yapf"]
+duke_ultrasound = ["scipy"]
+eurosat = ["scikit-image", "tifffile", "imagecodecs"]
+groove = ["pretty-midi", "pydub"]
+gtzan = ["pydub"]
+imagenet2012_corrupted = ["opencv-python", "scikit-image", "scipy"]
+librispeech = ["pydub"]
+lsun = ["tensorflow-io"]
+matplotlib = ["matplotlib"]
+nsynth = ["crepe (>=0.0.11)", "librosa", "scikit-learn (==0.20.3)"]
+ogbg_molpcba = ["pandas", "networkx"]
+pet_finder = ["pandas"]
+robonet = ["h5py"]
+svhn = ["scipy"]
+tensorflow = ["tensorflow (>=2.1)"]
+tensorflow-data-validation = ["tensorflow-data-validation"]
+tests-all = ["jupyter", "pytest", "pytest-xdist", "pandas", "pydub", "apache-beam", "pyyaml", "scipy", "gcld3", "langdetect", "nltk", "tldextract", "matplotlib", "pillow", "scikit-image", "tifffile", "imagecodecs", "pretty-midi", "opencv-python", "networkx", "h5py", "mwparserfromhell", "bs4", "lxml", "pycocotools"]
+the300w_lp = ["scipy"]
+wider_face = ["pillow"]
+wikipedia = ["mwparserfromhell", "apache-beam"]
+wsc273 = ["bs4", "lxml"]
+youtube_vis = ["pycocotools"]
+
+[[package]]
 name = "tensorflow-estimator"
 version = "2.5.0"
 description = "TensorFlow Estimator."
@@ -1280,6 +1378,18 @@ tensorflow-estimator = ">=2.5.0rc0,<2.6.0"
 termcolor = ">=1.1.0,<1.2.0"
 typing-extensions = ">=3.7.4,<3.8.0"
 wrapt = ">=1.12.1,<1.13.0"
+
+[[package]]
+name = "tensorflow-metadata"
+version = "0.22.2"
+description = "Library and standards for schema and statistics."
+category = "main"
+optional = false
+python-versions = ">=2.7,<4"
+
+[package.dependencies]
+googleapis-common-protos = "*"
+protobuf = ">=3.7,<4"
 
 [[package]]
 name = "termcolor"
@@ -1339,6 +1449,22 @@ description = "Tornado is a Python web framework and asynchronous networking lib
 category = "dev"
 optional = false
 python-versions = ">= 3.5"
+
+[[package]]
+name = "tqdm"
+version = "4.61.2"
+description = "Fast, Extensible Progress Meter"
+category = "main"
+optional = false
+python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,>=2.7"
+
+[package.dependencies]
+colorama = {version = "*", markers = "platform_system == \"Windows\""}
+
+[package.extras]
+dev = ["py-make (>=0.1.0)", "twine", "wheel"]
+notebook = ["ipywidgets (>=6)"]
+telegram = ["requests"]
 
 [[package]]
 name = "traitlets"
@@ -1421,7 +1547,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "3d24b47936fe1b24589a164284e3d19b57fa6018db7a54c00e0c4d8ff46a0d9a"
+content-hash = "235edfd5695b8b5bd2754e23c4a8b78b6a7b696a33258282c7f33cb8f0d468b6"
 
 [metadata.files]
 absl-py = [
@@ -1621,6 +1747,10 @@ defusedxml = [
     {file = "defusedxml-0.7.1-py2.py3-none-any.whl", hash = "sha256:a352e7e428770286cc899e2542b6cdaedb2b4953ff269a210103ec58f6198a61"},
     {file = "defusedxml-0.7.1.tar.gz", hash = "sha256:1bb3032db185915b62d7c6209c5a8792be6a32ab2fedacc84e01b52c51aa3e69"},
 ]
+dill = [
+    {file = "dill-0.3.4-py2.py3-none-any.whl", hash = "sha256:7e40e4a70304fd9ceab3535d36e58791d9c4a776b38ec7f7ec9afc8d3dca4d4f"},
+    {file = "dill-0.3.4.zip", hash = "sha256:9f9734205146b2b353ab3fec9af0070237b6ddae78452af83d2fca84d739e675"},
+]
 entrypoints = [
     {file = "entrypoints-0.3-py2.py3-none-any.whl", hash = "sha256:589f874b313739ad35be6e0cd7efde2a4e9b6fea91edcc34e58ecbb8dbe56d19"},
     {file = "entrypoints-0.3.tar.gz", hash = "sha256:c70dd71abe5a8c85e55e12c19bd91ccfeec11a6e99044204511f9ed547d48451"},
@@ -1628,6 +1758,9 @@ entrypoints = [
 flatbuffers = [
     {file = "flatbuffers-1.12-py2.py3-none-any.whl", hash = "sha256:9e9ef47fa92625c4721036e7c4124182668dc6021d9e7c73704edd395648deb9"},
     {file = "flatbuffers-1.12.tar.gz", hash = "sha256:63bb9a722d5e373701913e226135b28a6f6ac200d5cc7b4d919fa38d73b44610"},
+]
+future = [
+    {file = "future-0.18.2.tar.gz", hash = "sha256:b1bead90b70cf6ec3f0710ae53a525360fa360d306a86583adc6bf83a4db537d"},
 ]
 gast = [
     {file = "gast-0.4.0-py3-none-any.whl", hash = "sha256:b7adcdd5adbebf1adf17378da5ba3f543684dbec47b1cda1f3997e573cd542c4"},
@@ -1653,6 +1786,10 @@ google-pasta = [
     {file = "google-pasta-0.2.0.tar.gz", hash = "sha256:c9f2c8dfc8f96d0d5808299920721be30c9eec37f2389f28904f454565c8a16e"},
     {file = "google_pasta-0.2.0-py2-none-any.whl", hash = "sha256:4612951da876b1a10fe3960d7226f0c7682cf901e16ac06e473b267a5afa8954"},
     {file = "google_pasta-0.2.0-py3-none-any.whl", hash = "sha256:b32482794a366b5366a32c92a9a9201b107821889935a02b3e51f6b432ea84ed"},
+]
+googleapis-common-protos = [
+    {file = "googleapis-common-protos-1.53.0.tar.gz", hash = "sha256:a88ee8903aa0a81f6c3cec2d5cf62d3c8aa67c06439b0496b49048fb1854ebf4"},
+    {file = "googleapis_common_protos-1.53.0-py2.py3-none-any.whl", hash = "sha256:f6d561ab8fb16b30020b940e2dd01cd80082f4762fa9f3ee670f4419b4b8dbd0"},
 ]
 grpcio = [
     {file = "grpcio-1.34.1-cp27-cp27m-macosx_10_10_x86_64.whl", hash = "sha256:5c4402fd8ce28e2847112105591139dc121c8980770f683eb781be1568a64097"},
@@ -1996,6 +2133,9 @@ prometheus-client = [
     {file = "prometheus_client-0.11.0-py2.py3-none-any.whl", hash = "sha256:b014bc76815eb1399da8ce5fc84b7717a3e63652b0c0f8804092c9363acab1b2"},
     {file = "prometheus_client-0.11.0.tar.gz", hash = "sha256:3a8baade6cb80bcfe43297e33e7623f3118d660d41387593758e2fb1ea173a86"},
 ]
+promise = [
+    {file = "promise-2.3.tar.gz", hash = "sha256:dfd18337c523ba4b6a58801c164c1904a9d4d1b1747c7d5dbf45b693a49d93d0"},
+]
 prompt-toolkit = [
     {file = "prompt_toolkit-3.0.19-py3-none-any.whl", hash = "sha256:7089d8d2938043508aa9420ec18ce0922885304cddae87fb96eebca942299f88"},
     {file = "prompt_toolkit-3.0.19.tar.gz", hash = "sha256:08360ee3a3148bdb5163621709ee322ec34fc4375099afa4bbf751e9b7b7fa4f"},
@@ -2215,6 +2355,10 @@ tensorboard-data-server = [
 tensorboard-plugin-wit = [
     {file = "tensorboard_plugin_wit-1.8.0-py3-none-any.whl", hash = "sha256:2a80d1c551d741e99b2f197bb915d8a133e24adb8da1732b840041860f91183a"},
 ]
+tensorflow-datasets = [
+    {file = "tensorflow-datasets-4.4.0.tar.gz", hash = "sha256:3e95a61dec1fdb7b05dabc0dbed1b531e13d6c6fd362411423d0a775e5e9b960"},
+    {file = "tensorflow_datasets-4.4.0-py3-none-any.whl", hash = "sha256:b373e7b724a357637d15f29a11bb7bef3dc62bd144defffe5fec1b8b4f6cf580"},
+]
 tensorflow-estimator = [
     {file = "tensorflow_estimator-2.5.0-py2.py3-none-any.whl", hash = "sha256:d1fe76dee8b1dcab865d807a0246da0a9c4a635b1eba6e9545bf216c3aad6955"},
 ]
@@ -2227,6 +2371,9 @@ tensorflow-gpu = [
     {file = "tensorflow_gpu-2.5.0-cp38-cp38-win_amd64.whl", hash = "sha256:262c40432f1af638873c7210effef9eb3b74f1783478c438f854e0f1b14f80b0"},
     {file = "tensorflow_gpu-2.5.0-cp39-cp39-manylinux2010_x86_64.whl", hash = "sha256:90c1ecc8e72d20f4a036eaa27bdbb6f674f567de1f821b34474479ef98ff0b33"},
     {file = "tensorflow_gpu-2.5.0-cp39-cp39-win_amd64.whl", hash = "sha256:232b9e38fe0decede1bd5faa42117e5e8e1d7a2db28a056fbd272c9c08f81a2e"},
+]
+tensorflow-metadata = [
+    {file = "tensorflow_metadata-0.22.2-py2.py3-none-any.whl", hash = "sha256:f9ffde743dd61f775f35872e79c4eefecbc539a8870e57b20359dc74726f06eb"},
 ]
 termcolor = [
     {file = "termcolor-1.1.0.tar.gz", hash = "sha256:1d6d69ce66211143803fbc56652b41d73b4a400a2891d7bf7a1cdf4c02de613b"},
@@ -2289,6 +2436,10 @@ tornado = [
     {file = "tornado-6.1-cp39-cp39-win32.whl", hash = "sha256:d3d20ea5782ba63ed13bc2b8c291a053c8d807a8fa927d941bd718468f7b950c"},
     {file = "tornado-6.1-cp39-cp39-win_amd64.whl", hash = "sha256:548430be2740e327b3fe0201abe471f314741efcb0067ec4f2d7dcfb4825f3e4"},
     {file = "tornado-6.1.tar.gz", hash = "sha256:33c6e81d7bd55b468d2e793517c909b139960b6c790a60b7991b9b6b76fb9791"},
+]
+tqdm = [
+    {file = "tqdm-4.61.2-py2.py3-none-any.whl", hash = "sha256:5aa445ea0ad8b16d82b15ab342de6b195a722d75fc1ef9934a46bba6feafbc64"},
+    {file = "tqdm-4.61.2.tar.gz", hash = "sha256:8bb94db0d4468fea27d004a0f1d1c02da3cdedc00fe491c0de986b76a04d6b0a"},
 ]
 traitlets = [
     {file = "traitlets-5.0.5-py3-none-any.whl", hash = "sha256:69ff3f9d5351f31a7ad80443c2674b7099df13cc41fc5fa6e2f6d3b0330b0426"},

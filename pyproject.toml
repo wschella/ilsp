@@ -5,8 +5,9 @@ description = ""
 authors     = ["Wout Schellaert <wout.schellaert@gmail.com>"]
 
 [tool.poetry.dependencies]
-python         = "^3.9"
-tensorflow-gpu = "2.5"
+python              = "^3.9"
+tensorflow-gpu      = "2.5"
+tensorflow-datasets = "^4.4.0"
 
 [tool.poetry.dev-dependencies]
 mypy       = "^0.910"
@@ -23,4 +24,6 @@ build-backend = "poetry.core.masonry.api"
 
 # https://github.com/nat-n/poethepoet
 [tool.poe.tasks]
-jpt = { shell = "jupyter lab --no-browser --port=8888" }
+jpt   = { shell = "jupyter lab --no-browser --port=8888" }
+mnist = { script = "experiments.mnist:main" }
+cifar = { script = "experiments.cifar10:main" }
