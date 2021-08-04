@@ -1,8 +1,8 @@
 # Our own stuff
 
 # We don't commit data or model artificacts to source.
-data/
-models/
+/data/
+/models/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
