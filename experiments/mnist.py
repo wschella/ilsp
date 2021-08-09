@@ -1,5 +1,4 @@
 from typing import List, Tuple
-from os import path
 from dataclasses import dataclass
 import logging
 
@@ -17,6 +16,7 @@ from tensorflow.keras import Model
 from tensorflow.python.data.ops.dataset_ops import Dataset
 from tensorflow_datasets.core import DatasetInfo
 from tensorflow.python.framework.ops import Tensor
+from tensorflow_datasets.core.utils.read_config import ReadConfig
 
 # Used for .flatten() on Tensors
 import tensorflow.python.ops.numpy_ops.np_config as np_config
@@ -91,6 +91,10 @@ def load_dataset() -> Tuple[Dataset, DatasetInfo]:
         as_supervised=True,
 
         with_info=True,
+
+        read_config=ReadConfig(
+            try_autocache=False,
+        )
     )
 
     ds: Dataset = ds_train.concatenate(ds_test)
