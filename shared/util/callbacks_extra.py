@@ -44,6 +44,7 @@ class EpochCheckpointManagerCallback(Callback):
     [1] https://www.tensorflow.org/guide/checkpoint
     [2] https://www.tensorflow.org/api_docs/python/tf/train/Checkpoint
     [3] https://www.tensorflow.org/api_docs/python/tf/train/CheckpointManager
+    [4] https://www.tensorflow.org/guide/keras/custom_callback
     """
 
     def __init__(self, manager: CheckpointManager, verbose: bool = False):

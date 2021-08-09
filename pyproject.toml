@@ -8,6 +8,7 @@ authors     = ["Wout Schellaert <wout.schellaert@gmail.com>"]
 python              = "^3.9"
 tensorflow-gpu      = "2.5"
 tensorflow-datasets = "^4.4.0"
+click = "^8.0.1"
 
 [tool.poetry.dev-dependencies]
 mypy       = "^0.910"

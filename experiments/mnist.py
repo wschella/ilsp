@@ -1,10 +1,13 @@
 from typing import List, Tuple
 from os import path
+from dataclasses import dataclass
 import logging
 
 # We need to do this before importing TF
-from shared.util.tf_logging import set_tf_loglevel  # nopep8
+from shared.util.tf_logging import set_tf_loglevel
 set_tf_loglevel(logging.WARN)  # nopep8
+
+import click
 
 import tensorflow.keras as keras
 import tensorflow_datasets as tfds
@@ -13,17 +16,61 @@ import tensorflow as tf
 from tensorflow.keras import Model
 from tensorflow.python.data.ops.dataset_ops import Dataset
 from tensorflow_datasets.core import DatasetInfo
+from tensorflow.python.framework.ops import Tensor
 
-import shared.util.dataset_extra as ds_extra
+# Used for .flatten() on Tensors
+import tensorflow.python.ops.numpy_ops.np_config as np_config
+np_config.enable_numpy_behavior()  # nopep8
+
 import shared.util.callbacks_extra as cb_extra
+import shared.util.dataset_extra as ds_extra
+
 
 Dataset = tf.data.Dataset
 
+LOSS = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
-def main():
+
+@dataclass
+class BaseTrainArguments:
+    retrain: bool
+
+
+@dataclass
+class AssessorTrainArguments:
+    pass
+
+
+@click.command()
+@click.option('-r', '--retrain', is_flag=True, help='Wether the models should be retrained or try to reload from checkpoints (default)')
+def main(retrain: bool):
+    base_args = BaseTrainArguments(retrain)
+
     ds, ds_info = load_dataset()
     folds = ds_extra.k_folds(ds, 5)
-    models = train_models(folds, ds_info)
+    models = train_models(folds, ds_info, base_args)
+
+    results: List[Dataset] = []
+    for ((_train, test), model) in zip(folds, models):
+        def to_assessor(x: Tensor, y_true):
+            y_pred = model(x.reshape((1, 28, 28)))
+            loss = LOSS(y_true, y_pred)
+            return (x, loss)
+
+        results.append(test.map(to_assessor))
+
+    # Create the assessor dataset, which is the concatenation off all K test sets
+    # where the label is the loss for the corresponding model
+    ass_ds: tf.data.Dataset = ds_extra.concatenate_all(results)
+    (ass_train_ds, ass_test_ds) = ds_extra.split_absolute(ass_ds, 60000)
+    assert ass_ds.cardinality() == 70000
+
+    assessor = build_assessor_model()
+    assessor.fit(
+        train_pipeline(ass_train_ds),
+        epochs=6,
+        validation_data=test_pipeline(ass_test_ds),
+    )
 
 
 def load_dataset() -> Tuple[Dataset, DatasetInfo]:
@@ -50,7 +97,7 @@ def load_dataset() -> Tuple[Dataset, DatasetInfo]:
     return (ds, ds_info)
 
 
-def train_models(folds, ds_info) -> List[Model]:
+def train_models(folds, ds_info, args: BaseTrainArguments) -> List[Model]:
     models: List[Model] = []
     for (i, (train, test)) in enumerate(folds):
 
@@ -63,7 +110,7 @@ def train_models(folds, ds_info) -> List[Model]:
 
         latest = manager.latest_checkpoint
         initial_epoch = 0
-        if latest:
+        if latest and not args.retrain:
             print("Using model checkpoint {}".format(latest))
 
             # We add .expect_partial(), because if a previous run completed,
@@ -72,15 +119,15 @@ def train_models(folds, ds_info) -> List[Model]:
             checkpoint.restore(latest).expect_partial()
             initial_epoch = int(checkpoint.save_counter)
         else:
-            print("Training from scratch")
-
-        train = train_pipeline(train, ds_info)
-        test = test_pipeline(test, ds_info)
+            if args.retrain:
+                print("Training from scratch due to --retrain")
+            else:
+                print("Training from scratch")
 
         model.fit(
-            train,
+            train_pipeline(train),
             epochs=6,
-            validation_data=test,
+            validation_data=test_pipeline(test),
             callbacks=[checkpoint_callback],
             initial_epoch=initial_epoch
         )
@@ -89,7 +136,6 @@ def train_models(folds, ds_info) -> List[Model]:
 
 
 def build_model() -> Model:
-    #  Build model
     model = keras.models.Sequential([
         keras.layers.Flatten(input_shape=(28, 28)),
         keras.layers.Dense(128, activation='relu'),
@@ -97,13 +143,26 @@ def build_model() -> Model:
     ])
     model.compile(
         optimizer=keras.optimizers.Adam(0.001),
-        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+        loss=LOSS,
         metrics=[keras.metrics.SparseCategoricalAccuracy()],
     )
     return model
 
 
-def train_pipeline(ds_train: Dataset, ds_info):
+def build_assessor_model() -> Model:
+    model = keras.models.Sequential([
+        keras.layers.Flatten(input_shape=(28, 28)),
+        keras.layers.Dense(128, activation='relu'),
+        keras.layers.Dense(1)
+    ])
+    model.compile(
+        optimizer=keras.optimizers.Adam(0.001),
+        loss=keras.losses.mean_squared_error,
+    )
+    return model
+
+
+def train_pipeline(ds_train: Dataset):
     ds_train = ds_train.map(
         normalize_img, num_parallel_calls=tf.data.experimental.AUTOTUNE)
     ds_train = ds_train.cache()
@@ -113,7 +172,7 @@ def train_pipeline(ds_train: Dataset, ds_info):
     return ds_train
 
 
-def test_pipeline(ds_test: Dataset, ds_info):
+def test_pipeline(ds_test: Dataset):
     ds_test = ds_test.map(
         normalize_img, num_parallel_calls=tf.data.experimental.AUTOTUNE)
     ds_test = ds_test.batch(128)

@@ -9,6 +9,7 @@ from typing import Iterable, List, Tuple
 from math import ceil, floor
 
 import tensorflow as tf
+from tensorflow.python.ops.gen_math_ops import Any
 
 
 def concatenate_all(datasets: Iterable[tf.data.Dataset]) -> tf.data.Dataset:
@@ -45,6 +46,13 @@ def unzip(ds: tf.data.Dataset) -> Tuple[tf.data.Dataset, tf.data.Dataset]:
         ds.map(lambda a, _b: a),
         ds.map(lambda _a, b: b)
     )
+
+
+def peek(ds: tf.data.Dataset) -> Any:
+    """
+    Peek at the first element of a Dataset. Likely highly inefficient. 
+    """
+    return iter(ds.take(1)).get_next()  # type: ignore
 
 
 def k_folds(ds: tf.data.Dataset, n_folds: int) -> List[Tuple[tf.data.Dataset, tf.data.Dataset]]:
