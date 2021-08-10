@@ -12,6 +12,23 @@ import tensorflow as tf
 from tensorflow.python.ops.gen_math_ops import Any
 
 
+def enumerate_dict(ds: tf.data.Dataset, key: str = 'index') -> tf.data.Dataset:
+    """
+    Enumerate a Dataset by adding the index of the entry to it's FeaturesDict.
+    This will error if the DS elements are any other type than dictionaries.
+    """
+    return ds.enumerate().map(lambda index, features: features | {key: index})
+
+
+def to_supervised(ds: tf.data.Dataset, x: str, y: str) -> tf.data.Dataset:
+    """
+    Convert a Dataset with FeatureDict entries to one with Tuple[x, y] entries
+    for use with supervised learning problems. Much like originally adding
+    `as_supervised=True` to `tensorflow_dataset.load`.
+    """
+    return ds.map(lambda features: (features[x], features[y]))
+
+
 def concatenate_all(datasets: Iterable[tf.data.Dataset]) -> tf.data.Dataset:
     """
     Concatenate all Datasets into one.
@@ -50,7 +67,7 @@ def unzip(ds: tf.data.Dataset) -> Tuple[tf.data.Dataset, tf.data.Dataset]:
 
 def peek(ds: tf.data.Dataset) -> Any:
     """
-    Peek at the first element of a Dataset. Likely highly inefficient. 
+    Peek at the first element of a Dataset. Likely highly inefficient.
     """
     return iter(ds.take(1)).get_next()  # type: ignore
 

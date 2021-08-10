@@ -1,5 +1,6 @@
 from typing import List, Tuple
 from dataclasses import dataclass
+from os import path
 import logging
 
 # We need to do this before importing TF
@@ -7,11 +8,13 @@ from shared.util.tf_logging import set_tf_loglevel
 set_tf_loglevel(logging.WARN)  # nopep8
 
 import click
+import wandb
 
 import tensorflow.keras as keras
 import tensorflow_datasets as tfds
 import tensorflow as tf
 
+from wandb.keras import WandbCallback
 from tensorflow.keras import Model
 from tensorflow.python.data.ops.dataset_ops import Dataset
 from tensorflow_datasets.core import DatasetInfo
@@ -24,53 +27,83 @@ np_config.enable_numpy_behavior()  # nopep8
 
 import shared.util.callbacks_extra as cb_extra
 import shared.util.dataset_extra as ds_extra
-
+import shared
 
 Dataset = tf.data.Dataset
 
-LOSS = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-
 
 @dataclass
-class BaseTrainArguments:
-    retrain: bool
-
-
-@dataclass
-class AssessorTrainArguments:
-    pass
+class Flags:
+    retrain: bool = False
+    skip_assessor: bool = False
+    remake_dataset: bool = False
 
 
 @click.command()
-@click.option('-r', '--retrain', is_flag=True, help='Wether the models should be retrained or try to reload from checkpoints (default)')
-def main(retrain: bool):
-    base_args = BaseTrainArguments(retrain)
+@click.option('-r', '--retrain', is_flag=True, help='Wether the models should be retrained even if they can be reloaded from checkpoints (default False)')
+@click.option('-s', '--skip-assessor', is_flag=True, help='Wether traingin the assessor model should be skipped (default False)')
+@click.option('--remake-dataset', is_flag=True, help='Whether the assessor dataset should be recreated even if it can loaded from disk (default False)')
+def main(**kwargs):
+    flags = Flags(**kwargs)
 
     ds, ds_info = load_dataset()
+    ds = ds_extra.enumerate_dict(ds)
     folds = ds_extra.k_folds(ds, 5)
-    models = train_models(folds, ds_info, base_args)
+    models = train_models(folds, flags)
 
+    if flags.skip_assessor:
+        return
+
+    # wandb.init(dir=path.dirname("assets/wandb"), project="assessor-kfold")
+    # wandb_callback = WandbCallback(log_evaluation=True)
+
+    ds_path = "assets/data/kfold/mnist"
+    if path.exists(ds_path) and not flags.remake_dataset:
+        print(f"Loading existing assessor dataset at {ds_path}")
+        ass_ds = tf.data.experimental.load(ds_path)
+    else:
+        print("Creating assessor dataset")
+        ass_ds = create_assessor_dataset(folds, models)
+        print(f"Saving assessor dataset to {ds_path}")
+        tf.data.experimental.save(ass_ds, ds_path)
+        print(f"Saved assessor dataset to {ds_path}")
+
+    (ass_train_ds, ass_test_ds) = ds_extra.split_absolute(ass_ds, 60000)
+    assessor = build_assessor_model()
+    features = {'x': 'image', 'y': 'loss'}
+    assessor.fit(
+        train_pipeline(ds_extra.to_supervised(ass_train_ds, **features)),
+        epochs=6,
+        validation_data=test_pipeline(ds_extra.to_supervised(ass_test_ds, **features)),
+        # callbacks=[WandbCallback(predictions=10, generator=ass_test_ds, input_type='image')]
+        # callbacks=[wandb_callback]
+    )
+
+    # wandb.finish()
+
+
+def create_assessor_dataset(folds, models: List[Model]) -> tf.data.Dataset:
+    """
+    Create the assessor dataset, which is the concatenation off all K test sets
+    where the label is the loss for the corresponding model
+    """
     results: List[Dataset] = []
     for ((_train, test), model) in zip(folds, models):
-        def to_assessor(x: Tensor, y_true):
+        # This function maps the entries in the test sets of each fold to
+        # a dataset entry fit for training the assessor.
+        # The key datapoints are x (i.e. image) and loss which will be the label
+        # for the assessor.
+        def to_assessor_entry(entry):
+            x, y_true = entry['image'], entry['label']
             y_pred = model(x.reshape((1, 28, 28)))
-            loss = LOSS(y_true, y_pred)
-            return (x, loss)
+            loss = model.loss(y_true, y_pred)
+            return entry | {'prediction': y_pred, 'loss': loss}
 
-        results.append(test.map(to_assessor))
+        results.append(test.map(to_assessor_entry))
 
-    # Create the assessor dataset, which is the concatenation off all K test sets
-    # where the label is the loss for the corresponding model
     ass_ds: tf.data.Dataset = ds_extra.concatenate_all(results)
-    (ass_train_ds, ass_test_ds) = ds_extra.split_absolute(ass_ds, 60000)
     assert ass_ds.cardinality() == 70000
-
-    assessor = build_assessor_model()
-    assessor.fit(
-        train_pipeline(ass_train_ds),
-        epochs=6,
-        validation_data=test_pipeline(ass_test_ds),
-    )
+    return ass_ds
 
 
 def load_dataset() -> Tuple[Dataset, DatasetInfo]:
@@ -79,6 +112,7 @@ def load_dataset() -> Tuple[Dataset, DatasetInfo]:
     ds_info: DatasetInfo
     (ds_train, ds_test), ds_info = tfds.load(
         'mnist',
+        with_info=True,
 
         # We need to concat later, but if we don't split,
         # we get a {"train": Dataset, "test": Dataset} object anyway.
@@ -87,12 +121,9 @@ def load_dataset() -> Tuple[Dataset, DatasetInfo]:
         # We explicitly want control over shuffling ourselves
         shuffle_files=False,
 
-        # Returns tuple (img, label) instead of dict {'image': img, 'label': label}
-        as_supervised=True,
-
-        with_info=True,
-
         read_config=ReadConfig(
+            # We don't want to cache at this stage, since we will build an
+            # dataset pipeline on it first.
             try_autocache=False,
         )
     )
@@ -101,20 +132,20 @@ def load_dataset() -> Tuple[Dataset, DatasetInfo]:
     return (ds, ds_info)
 
 
-def train_models(folds, ds_info, args: BaseTrainArguments) -> List[Model]:
+def train_models(folds, flags: Flags) -> List[Model]:
     models: List[Model] = []
     for (i, (train, test)) in enumerate(folds):
 
-        model = build_model()
+        model = shared.baselines.mnist.model()
 
-        checkpoint_dir = f"models/kfold/mnist/{i}/"
+        checkpoint_dir = f"assets/models/kfold/mnist/{i}/"
         checkpoint = tf.train.Checkpoint(model=model, optimizer=model.optimizer)
         manager = tf.train.CheckpointManager(checkpoint, checkpoint_dir, max_to_keep=1)
         checkpoint_callback = cb_extra.EpochCheckpointManagerCallback(manager)
 
         latest = manager.latest_checkpoint
         initial_epoch = 0
-        if latest and not args.retrain:
+        if latest and not flags.retrain:
             print("Using model checkpoint {}".format(latest))
 
             # We add .expect_partial(), because if a previous run completed,
@@ -123,34 +154,21 @@ def train_models(folds, ds_info, args: BaseTrainArguments) -> List[Model]:
             checkpoint.restore(latest).expect_partial()
             initial_epoch = int(checkpoint.save_counter)
         else:
-            if args.retrain:
+            if flags.retrain:
                 print("Training from scratch due to --retrain")
             else:
                 print("Training from scratch")
 
+        features = {'x': 'image', 'y': 'label'}
         model.fit(
-            train_pipeline(train),
+            train_pipeline(ds_extra.to_supervised(train, **features)),
             epochs=6,
-            validation_data=test_pipeline(test),
+            validation_data=test_pipeline(ds_extra.to_supervised(test, **features)),
             callbacks=[checkpoint_callback],
             initial_epoch=initial_epoch
         )
         models.append(model)
     return models
-
-
-def build_model() -> Model:
-    model = keras.models.Sequential([
-        keras.layers.Flatten(input_shape=(28, 28)),
-        keras.layers.Dense(128, activation='relu'),
-        keras.layers.Dense(10)
-    ])
-    model.compile(
-        optimizer=keras.optimizers.Adam(0.001),
-        loss=LOSS,
-        metrics=[keras.metrics.SparseCategoricalAccuracy()],
-    )
-    return model
 
 
 def build_assessor_model() -> Model:
