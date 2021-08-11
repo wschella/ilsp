@@ -6,6 +6,7 @@ from shared.models.wide_resnet import wide_resnet
 
 
 def model(
+    compiled: bool = True,
     input_shape=(32, 32, 3),
     depth=28,
     width_multiplier=10,
@@ -23,11 +24,12 @@ def model(
         **kwargs
     )
 
-    model.compile(
-        optimizer=keras.optimizers.Adam(0.001),
-        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-        metrics=[keras.metrics.SparseCategoricalAccuracy()]
-    )
+    if compiled:
+        model.compile(
+            optimizer=keras.optimizers.Adam(0.001),
+            loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+            metrics=[keras.metrics.SparseCategoricalAccuracy()]
+        )
 
     return model
 

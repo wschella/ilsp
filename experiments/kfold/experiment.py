@@ -7,25 +7,27 @@ import logging
 from shared.util.tf_logging import set_tf_loglevel
 set_tf_loglevel(logging.WARN)  # nopep8
 
-
 import click
 import wandb
-
-import tensorflow.keras as keras
-import tensorflow_datasets as tfds
 import tensorflow as tf
 import numpy as np
 
-from wandb.keras import WandbCallback
+import tensorflow.keras as keras
+import tensorflow_datasets as tfds
+
 from tensorflow.keras import Model
 from tensorflow.python.data.ops.dataset_ops import Dataset
 from tensorflow_datasets.core import DatasetInfo
 from tensorflow.python.framework.ops import Tensor
 from tensorflow_datasets.core.utils.read_config import ReadConfig
-import tensorflow.python.ops.numpy_ops.np_config as np_config
+from tensorflow.python.ops.numpy_ops import np_config
+
+from wandb.keras import WandbCallback
+from click_option_group import optgroup
 
 import shared.util.callbacks_extra as cb_extra
 import shared.util.dataset_extra as ds_extra
+import shared.util.click_extra as click_extra
 import shared
 
 import experiments.kfold.assessors
@@ -41,8 +43,14 @@ class Config:
     epochs: int
     folds: int
     assessor_test_set_size: int
+    assessor_epochs: int
     model: Callable[[], Model]
     assessor: Callable[[], Model]
+
+    def override(self, **kwargs):
+        for k, v in kwargs.items():
+            if v is not None:
+                setattr(self, k, v)
 
 
 CONFIG = {
@@ -50,6 +58,7 @@ CONFIG = {
         epochs=6,
         folds=5,
         assessor_test_set_size=10000,
+        assessor_epochs=50,
         model=shared.baselines.mnist.model,
         assessor=experiments.kfold.assessors.mnist
     ),
@@ -57,8 +66,9 @@ CONFIG = {
         epochs=10,
         folds=5,
         assessor_test_set_size=10000,
+        assessor_epochs=50,
         model=shared.baselines.cifar10.model_with(depth=16, width_multiplier=1),
-        assessor=experiments.kfold.assessors.mnist
+        assessor=experiments.kfold.assessors.cifar10
     )
 }
 
@@ -80,12 +90,16 @@ class Flags:
 
 @click.command()
 @click.option('-d', '--dataset', default='mnist', help='Which dataset to use for the experiment.')
-@click.option('-r', '--retrain', is_flag=True, help='Wether the models should be retrained even if they can be reloaded from checkpoints (default False)')
-@click.option('-s', '--skip-assessor', is_flag=True, help='Wether traingin the assessor model should be skipped (default False)')
+@click.option('-r', '--retrain', is_flag=True, help='Wether the base models should be retrained even if they can be reloaded from checkpoints (default False)')
+@click.option('-s', '--skip-assessor', is_flag=True, help='Wether training the assessor model should be skipped (default False)')
 @click.option('--remake-dataset', '--rd', is_flag=True, help='Whether the assessor dataset should be recreated even if it can loaded from disk (default False)')
+@optgroup.group('Configuration and Hyperparameters')
+@click_extra.options_from_dataclass(Config, prefix="c-", with_optgroup=True, exclude=["model", "assessor"])
 def main(**kwargs):
-    flags = Flags(**kwargs)
+    [flag_kwargs, config_kwargs] = click_extra.split_arguments(kwargs, prefixes=['c_'])
+    flags = Flags(**flag_kwargs)
     config = CONFIG[flags.dataset]
+    config.override(**config_kwargs)
 
     ds, ds_info = load_dataset(flags)
     ds: Dataset = ds_extra.enumerate_dict(ds)
@@ -108,17 +122,17 @@ def main(**kwargs):
         tf.data.experimental.save(ass_ds, ds_path)
         print(f"Saved assessor dataset to {ds_path}")
 
-    (ass_test_ds, ass_train_ds) = ds_extra.split_absolute(ass_ds, config.assessor_test_set_size)
-    assessor = config.assessor()
     features = {'x': 'image', 'y': 'loss'}
+    ass_ds = ds_extra.to_supervised(ass_ds, **features)
+    (ass_test_ds, ass_train_ds) = ds_extra.split_absolute(ass_ds, config.assessor_test_set_size)
+    assessor: Model = config.assessor()
     assessor.fit(
-        train_pipeline(ds_extra.to_supervised(ass_train_ds, **features)),
-        epochs=config.epochs,
-        validation_data=test_pipeline(ds_extra.to_supervised(ass_test_ds, **features)),
+        train_pipeline(ass_train_ds),
+        epochs=config.assessor_epochs,
+        validation_data=test_pipeline(ass_test_ds),
         # callbacks=[WandbCallback(predictions=10, generator=ass_test_ds, input_type='image')]
         # callbacks=[wandb_callback]
     )
-
     # wandb.finish()
 
 
