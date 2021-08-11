@@ -10,6 +10,16 @@ from math import ceil, floor
 
 import tensorflow as tf
 from tensorflow.python.ops.gen_math_ops import Any
+from tensorflow_datasets.core.dataset_info import DatasetInfo
+
+
+def total_size(ds: DatasetInfo) -> int:
+    """
+    Return the total size (i.e. number of elements) based on the DatasetInfo
+    of the Dataset. This function is just reminder there is a built-in way to do
+    this that is not very discoverable.
+    """
+    return ds.splits.total_num_examples
 
 
 def enumerate_dict(ds: tf.data.Dataset, key: str = 'index') -> tf.data.Dataset:
