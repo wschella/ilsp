@@ -1,4 +1,4 @@
-from typing import List, Tuple, Callable
+from typing import Any, List, Tuple, Callable
 from dataclasses import dataclass
 from os import path
 import logging
@@ -37,6 +37,10 @@ np_config.enable_numpy_behavior()  # nopep8
 
 Dataset = tf.data.Dataset
 
+CHECKPOINT_DIR_BASE = lambda dataset: f"assets/models/kfold/{dataset}/"
+CHECKPOINT_DIR_DATASET = lambda dataset: f"assets/data/kfold/{dataset}/"
+CHECKPOINT_DIR_ASSESSOR = lambda dataset: f"assets/models/kfold/{dataset}_assessor/"
+
 
 @dataclass
 class Config:
@@ -58,7 +62,7 @@ CONFIG = {
         epochs=6,
         folds=5,
         assessor_test_set_size=10000,
-        assessor_epochs=50,
+        assessor_epochs=15,
         model=shared.baselines.mnist.model,
         assessor=experiments.kfold.assessors.mnist
     ),
@@ -68,16 +72,17 @@ CONFIG = {
         assessor_test_set_size=10000,
         assessor_epochs=50,
         model=shared.baselines.cifar10.model_with(depth=16, width_multiplier=1),
-        assessor=experiments.kfold.assessors.cifar10
+        assessor=lambda: experiments.kfold.assessors.cifar10(depth=16, width_multiplier=1)
     )
 }
 
 
 @dataclass
 class Flags:
-    retrain: bool = False
+    restore_base: bool = True
+    restore_assessor: bool = True
+    restore_dataset: bool = True
     skip_assessor: bool = False
-    remake_dataset: bool = False
     dataset: str = 'mnist'
 
     def validate(self):
@@ -90,9 +95,10 @@ class Flags:
 
 @click.command()
 @click.option('-d', '--dataset', default='mnist', help='Which dataset to use for the experiment.')
-@click.option('-r', '--retrain', is_flag=True, help='Wether the base models should be retrained even if they can be reloaded from checkpoints (default False)')
-@click.option('-s', '--skip-assessor', is_flag=True, help='Wether training the assessor model should be skipped (default False)')
-@click.option('--remake-dataset', '--rd', is_flag=True, help='Whether the assessor dataset should be recreated even if it can loaded from disk (default False)')
+@click.option('--restore-base/--no-restore-base', default=True, help='Wether the base models should be restored from checkpoints if possible', show_default=True)
+@click.option('--restore-assessor/--no-restore-assessor', default=True, help='Whether the assessor model should be should be restored from checkpoints if possible', show_default=True)
+@click.option('--restore-dataset/--no-restore-dataset', default=True, help='Whether the assessor dataset should be should be restored from checkpoints if possible', show_default=True)
+@click.option('-s', '--skip-assessor', is_flag=True, help='Wether training the assessor model should be skipped', show_default=True)
 @optgroup.group('Configuration and Hyperparameters')
 @click_extra.options_from_dataclass(Config, prefix="c-", with_optgroup=True, exclude=["model", "assessor"])
 def main(**kwargs):
@@ -112,8 +118,8 @@ def main(**kwargs):
     # wandb.init(dir=path.dirname("assets/wandb"), project="assessor-kfold")
     # wandb_callback = WandbCallback(log_evaluation=True)
 
-    ds_path = f"assets/data/kfold/{flags.dataset}"
-    if path.exists(ds_path) and not flags.remake_dataset:
+    ds_path = CHECKPOINT_DIR_DATASET(flags.dataset)
+    if path.exists(ds_path) and flags.restore_dataset:
         print(f"Loading existing assessor dataset at {ds_path}")
         ass_ds = tf.data.experimental.load(ds_path)
     else:
@@ -126,13 +132,23 @@ def main(**kwargs):
     ass_ds = ds_extra.to_supervised(ass_ds, **features)
     (ass_test_ds, ass_train_ds) = ds_extra.split_absolute(ass_ds, config.assessor_test_set_size)
     assessor: Model = config.assessor()
+    checkpoint_dir = CHECKPOINT_DIR_ASSESSOR(flags.dataset)
+    assessor, checkpoint_callback, initial_epoch = try_restore_model(
+        assessor, checkpoint_dir, flags.restore_assessor)
     assessor.fit(
         train_pipeline(ass_train_ds),
         epochs=config.assessor_epochs,
         validation_data=test_pipeline(ass_test_ds),
-        # callbacks=[WandbCallback(predictions=10, generator=ass_test_ds, input_type='image')]
+        # callbacks=[]
         # callbacks=[wandb_callback]
+        callbacks=[
+            # WandbCallback(predictions=10, generator=ass_test_ds, input_type='image')
+            checkpoint_callback
+        ],
+        initial_epoch=initial_epoch
     )
+
+    assessor.evaluate(test_pipeline(ass_test_ds))
     # wandb.finish()
 
 
@@ -193,26 +209,9 @@ def train_models(folds, flags: Flags) -> List[Model]:
         config = CONFIG[flags.dataset]
         model = config.model()
 
-        checkpoint_dir = f"assets/models/kfold/{flags.dataset}/{i}/"
-        checkpoint = tf.train.Checkpoint(model=model, optimizer=model.optimizer)
-        manager = tf.train.CheckpointManager(checkpoint, checkpoint_dir, max_to_keep=1)
-        checkpoint_callback = cb_extra.EpochCheckpointManagerCallback(manager)
-
-        latest = manager.latest_checkpoint
-        initial_epoch = 0
-        if latest and not flags.retrain:
-            print("Using model checkpoint {}".format(latest))
-
-            # We add .expect_partial(), because if a previous run completed,
-            # and we consequently restore from the last checkpoint, no further
-            # training is need, and we don't expect to use all variables.
-            checkpoint.restore(latest).expect_partial()
-            initial_epoch = int(checkpoint.save_counter)
-        else:
-            if flags.retrain:
-                print(f"Training on fold {i} from scratch due to --retrain")
-            else:
-                print(f"Training on fold {i} from scratch")
+        checkpoint_dir = f"{CHECKPOINT_DIR_BASE(flags.dataset)}/{i}/"
+        model, checkpoint_callback, initial_epoch = try_restore_model(
+            model, checkpoint_dir, flags.restore_base)
 
         features = {'x': 'image', 'y': 'label'}
         model.fit(
@@ -224,6 +223,30 @@ def train_models(folds, flags: Flags) -> List[Model]:
         )
         models.append(model)
     return models
+
+
+def try_restore_model(model: Model, checkpoint_dir: str, restore: bool = True) -> Tuple[Model, Any, int]:
+    checkpoint = tf.train.Checkpoint(model=model, optimizer=model.optimizer)
+    manager = tf.train.CheckpointManager(checkpoint, checkpoint_dir, max_to_keep=1)
+    checkpoint_callback = cb_extra.EpochCheckpointManagerCallback(manager)
+
+    latest = manager.latest_checkpoint
+    initial_epoch = 0
+    if latest and restore:
+        print("Using model checkpoint {}".format(latest))
+
+        # We add .expect_partial(), because if a previous run completed,
+        # and we consequently restore from the last checkpoint, no further
+        # training is need, and we don't expect to use all variables.
+        checkpoint.restore(latest).expect_partial()
+        initial_epoch = int(checkpoint.save_counter)
+    else:
+        if not restore:
+            print(f"Training on from scratch due to --no-restore for {checkpoint_dir}")
+        else:
+            print(f"Training on from scratch for {checkpoint_dir}")
+
+    return model, checkpoint_callback, initial_epoch
 
 
 def train_pipeline(ds_train: Dataset):
