@@ -85,6 +85,18 @@ class Flags:
     skip_assessor: bool = False
     dataset: str = 'mnist'
 
+    @staticmethod
+    def collapse(kwargs):
+        restore = kwargs['restore']
+        del kwargs['restore']
+
+        if restore is None:
+            return kwargs
+
+        for asset in ['restore_base', 'restore_assessor', 'restore_dataset']:
+            kwargs[asset] = restore
+        return kwargs
+
     def validate(self):
         if self.dataset not in ['mnist', 'cifar10']:
             return ValueError(f'Unknown dataset {self.dataset}')
@@ -95,6 +107,7 @@ class Flags:
 
 @click.command()
 @click.option('-d', '--dataset', default='mnist', help='Which dataset to use for the experiment.')
+@click.option('--restore/--no-restore', default=None, help='Wether everything (see specific flags) should be restored from checkpoints if possible. Can NOT be overridden by specific flags.', show_default=True)
 @click.option('--restore-base/--no-restore-base', default=True, help='Wether the base models should be restored from checkpoints if possible', show_default=True)
 @click.option('--restore-assessor/--no-restore-assessor', default=True, help='Whether the assessor model should be should be restored from checkpoints if possible', show_default=True)
 @click.option('--restore-dataset/--no-restore-dataset', default=True, help='Whether the assessor dataset should be should be restored from checkpoints if possible', show_default=True)
@@ -103,7 +116,7 @@ class Flags:
 @click_extra.options_from_dataclass(Config, prefix="c-", with_optgroup=True, exclude=["model", "assessor"])
 def main(**kwargs):
     [flag_kwargs, config_kwargs] = click_extra.split_arguments(kwargs, prefixes=['c_'])
-    flags = Flags(**flag_kwargs)
+    flags = Flags(**(Flags.collapse(flag_kwargs)))
     config = CONFIG[flags.dataset]
     config.override(**config_kwargs)
 
@@ -118,6 +131,7 @@ def main(**kwargs):
     # wandb.init(dir=path.dirname("assets/wandb"), project="assessor-kfold")
     # wandb_callback = WandbCallback(log_evaluation=True)
 
+    # Create the assessor dataset, or load it from disk if it exists
     ds_path = CHECKPOINT_DIR_DATASET(flags.dataset)
     if path.exists(ds_path) and flags.restore_dataset:
         print(f"Loading existing assessor dataset at {ds_path}")

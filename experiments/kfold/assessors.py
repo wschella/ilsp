@@ -12,7 +12,7 @@ def mnist() -> Model:
         keras.layers.Dense(1, name="regression")
     ])
     model.compile(
-        optimizer=keras.optimizers.Adam(0.001),
+        optimizer=keras.optimizers.Adam(0.01),
         loss=keras.losses.mean_squared_error,
     )
     return model
