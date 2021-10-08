@@ -115,11 +115,13 @@ class Flags:
 @optgroup.group('Configuration and Hyperparameters')
 @click_extra.options_from_dataclass(Config, prefix="c-", with_optgroup=True, exclude=["model", "assessor"])
 def main(**kwargs):
+    # Load the flags (for and configs
     [flag_kwargs, config_kwargs] = click_extra.split_arguments(kwargs, prefixes=['c_'])
     flags = Flags(**(Flags.collapse(flag_kwargs)))
     config = CONFIG[flags.dataset]
     config.override(**config_kwargs)
 
+    # Train K baseline models
     ds, ds_info = load_dataset(flags)
     ds: Dataset = ds_extra.enumerate_dict(ds)
     folds = ds_extra.k_folds(ds, 5)
@@ -131,39 +133,48 @@ def main(**kwargs):
     # wandb.init(dir=path.dirname("assets/wandb"), project="assessor-kfold")
     # wandb_callback = WandbCallback(log_evaluation=True)
 
-    # Create the assessor dataset, or load it from disk if it exists
+    # Create the assessor dataset (or restore)
     ds_path = CHECKPOINT_DIR_DATASET(flags.dataset)
-    if path.exists(ds_path) and flags.restore_dataset:
-        print(f"Loading existing assessor dataset at {ds_path}")
-        ass_ds = tf.data.experimental.load(ds_path)
-    else:
-        ass_ds = create_assessor_dataset(folds, models, ds_info)
-        print(f"Saving assessor dataset to {ds_path}")
-        tf.data.experimental.save(ass_ds, ds_path)
-        print(f"Saved assessor dataset to {ds_path}")
-
-    features = {'x': 'image', 'y': 'loss'}
-    ass_ds = ds_extra.to_supervised(ass_ds, **features)
+    creator = lambda: create_assessor_dataset(folds, models, ds_info)
+    ass_ds = restore_or_create_dataset(
+        ds_path, flags.restore_dataset, creator, reload_after_save=True)
+    ass_ds = ds_extra.to_supervised(ass_ds, x="image", y="loss")
     (ass_test_ds, ass_train_ds) = ds_extra.split_absolute(ass_ds, config.assessor_test_set_size)
+
+    # Create assessor model (or restore)
     assessor: Model = config.assessor()
     checkpoint_dir = CHECKPOINT_DIR_ASSESSOR(flags.dataset)
     assessor, checkpoint_callback, initial_epoch = try_restore_model(
         assessor, checkpoint_dir, flags.restore_assessor)
+
     assessor.fit(
         train_pipeline(ass_train_ds),
         epochs=config.assessor_epochs,
         validation_data=test_pipeline(ass_test_ds),
-        # callbacks=[]
-        # callbacks=[wandb_callback]
         callbacks=[
-            # WandbCallback(predictions=10, generator=ass_test_ds, input_type='image')
             checkpoint_callback
         ],
         initial_epoch=initial_epoch
     )
 
     assessor.evaluate(test_pipeline(ass_test_ds))
-    # wandb.finish()
+
+
+def restore_or_create_dataset(ds_path: str, should_restore: bool, creator: Callable, reload_after_save: bool = True) -> tf.data.Dataset:
+
+    if path.exists(ds_path) and should_restore:
+        print(f"Loading existing dataset at {ds_path}")
+        ds = tf.data.experimental.load(ds_path)
+
+    else:
+        ds = creator()
+        print(f"Saving dataset to {ds_path}")
+        tf.data.experimental.save(ds, ds_path)
+        print(f"Saved dataset to {ds_path}")
+        ds = tf.data.experimental.load(ds_path)
+        print(f"Now loaded assessor dataset from disk")
+
+    return ds
 
 
 def create_assessor_dataset(folds, models: List[Model], ds_info: DatasetInfo) -> tf.data.Dataset:
@@ -179,7 +190,7 @@ def create_assessor_dataset(folds, models: List[Model], ds_info: DatasetInfo) ->
         # The key datapoints are x (i.e. image) and loss which will be the label
         # for the assessor.
         def to_assessor_entry(entry):
-            x, y_true = entry['image'], entry['label']
+            x, y_true = normalize_img(entry['image'], entry['label'])
             y_pred = model(x.reshape((1) + x.shape))
             loss = model.loss(y_true, y_pred)
             return entry | {'prediction': y_pred, 'loss': loss}
