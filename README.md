@@ -1,5 +1,10 @@
 # Assessor models
 
+## Running
+
+The entry point to the experiments is "assessors/main.py". Use it by running `poe run` (after setup is done of course). Check the available options with `poe run --help`.
+Another option is invoking Python directly `python -m assessors.main --help`
+
 ## Setup
 
 We use a combination [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/) for environment management (Python version, CUDA support, ...), and [Poetry](https://python-poetry.org/) for package & dependency management. You only need Conda to get started, which will take care of installing Poetry for you. See [environment.yml](./environment.yml) for details.

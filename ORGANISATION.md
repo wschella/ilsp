@@ -6,6 +6,9 @@ We are mainly interested in a failure & score prediction scenario here.
 
 ## Functionality
 
+- Download Base Datasets
+  - Produced Assets
+    - Base Datasets
 - Base Model Learning
   - Required Assets
     - Base Dataset

@@ -8,9 +8,10 @@ authors     = ["Wout Schellaert <wout.schellaert@gmail.com>"]
 python              = "^3.9"
 tensorflow-gpu      = "^2.6.0"
 tensorflow-datasets = "^4.4.0"
-ipywidgets          = "^7.6.3"
+tqdm = "^4.62.3"
 
 [tool.poetry.dev-dependencies]
+ipywidgets         = "^7.6.3"
 click              = "^8.0.1"
 mypy               = "^0.910"
 autopep8           = "^1.5.7"
@@ -29,6 +30,6 @@ build-backend = "poetry.core.masonry.api"
 
 # https://github.com/nat-n/poethepoet
 [tool.poe.tasks]
-jpt   = { shell = "jupyter lab --no-browser --port=8888" }
-kfold = { script = "experiments.kfold.experiment:main" }
-gpu   = { shell = "python scripts/gpu_test.py" }
+jpt = { shell = "jupyter lab --no-browser --port=8888" }
+run = { script = "assessors.main:run" }
+gpu = { shell = "python scripts/gpu_test.py" }

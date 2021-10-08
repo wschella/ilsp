@@ -3,16 +3,9 @@ channels:
   - conda-forge
 
 # These are our environment dependencies, which are pinned to versions compatible
-# with tensorflow=2.5, which is not yet available on conda, and tf packaging 
-# has been broken anyway on conda for some months [1]. 
-# So instead, we manage tensorflow through Poetry, which uses PyPi packages,
-# which are working (for me at least). We also manage other dpendencies through 
-# Poetry, which is likely cleaner / better than conda anyway.
-# So do we do environment management with conda, and Python dependency management
-# with Poetry. In the end, you only need conda to get started,
-# and this repo handles the rest.
-#
-# [1] https://github.com/ContinuumIO/anaconda-issues/issues/12194#issuecomment-751700156
+# with the libraries defined in pyproject.toml, which mostly matters for the like 
+# of tensorflow and torch.
+# Everything we can, we manage with poetry.
 dependencies:
   - python=3.9
   - pip=21.1

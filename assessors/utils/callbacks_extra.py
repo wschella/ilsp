@@ -1,3 +1,6 @@
+from typing import *
+
+import tensorflow as tf
 from tensorflow.python.training.checkpoint_management import CheckpointManager
 from tensorflow.python.keras.callbacks import Callback
 
@@ -47,12 +50,19 @@ class EpochCheckpointManagerCallback(Callback):
     [4] https://www.tensorflow.org/guide/keras/custom_callback
     """
 
-    def __init__(self, manager: CheckpointManager, verbose: bool = False):
+    def __init__(self,
+                 manager: CheckpointManager,
+                 epoch: Optional[tf.Variable] = None,
+                 verbose: bool = False):
         self.manager = manager
+        self.epoch = epoch
         self.verbose = verbose
         super().__init__()
 
     def on_epoch_end(self, epoch, logs):
+        if self.epoch is not None:
+            self.epoch.assign_add(1)
+
         save_path = self.manager.save()
         if self.verbose:
             print("Saved checkpoint for epoch {}: {}".format(epoch, save_path))
