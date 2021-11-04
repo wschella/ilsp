@@ -1,4 +1,4 @@
-from assessors.models.model import BaseModel
+from assessors.models import ModelDefinition
 from typing import *
 from dataclasses import dataclass
 from pathlib import *
@@ -10,7 +10,7 @@ import tensorflow as tf
 
 from assessors.datasets import TFDatasetWrapper
 from assessors.utils import dataset_extra as dse
-from assessors.cli.shared import CommandArguments, get_model
+from assessors.cli.shared import CommandArguments, get_model_def
 from assessors.cli.cli import cli, CLIArgs
 
 
@@ -51,8 +51,8 @@ class MakeKFoldArgs(CommandArguments):
 
 @cli.command('dataset-make')
 @click.argument('dataset')
-@click.option('-f', '--folds', default=5, help="The number of folds.")
-@click.option('-m', '--model', default="default", help="The model variant to train.")
+@click.option('-f', '--folds', default=5, help="Number of folds to use.")
+@click.option('-m', '--model', default="default", help="The model variant to use.")
 @click.pass_context
 def dataset_make(ctx, **kwargs):
     """
@@ -60,18 +60,20 @@ def dataset_make(ctx, **kwargs):
     """
     args = MakeKFoldArgs(parent=ctx.obj, **kwargs).validated()
 
-    model_class: type[BaseModel] = get_model(args.dataset, args.model)
+    model_def: ModelDefinition = get_model_def(args.dataset, args.model)()
 
     dataset = TFDatasetWrapper(args.dataset, as_supervised=False).load_all()
+    # TODO: This is not working, it enumerates last.
     dataset = dse.enumerate_dict(dataset)
 
     models = []
-    assessor_dataset_parts = []
+    ds_parts = []
+    dir = Path(f"artifacts/models/{args.dataset}/{args.model}/kfold_{args.folds}/")
+    n_folds = len(list(dir.glob("*")))
 
-    for i, (_train, test) in enumerate(dse.k_folds(dataset, args.folds)):
-        path = Path(f"artifacts/models/{args.dataset}/{args.model}/kfold/{i}")
-        model: BaseModel = model_class(path=path, restore="full")
-        model.load()
+    for i, (_train, test) in enumerate(dse.k_folds(dataset, n_folds)):
+        path = dir / str(i)
+        model = model_def.try_restore_from(path)
 
         # We need to keep a reference to the model because otherwise TF
         # prematurely deletes it.
@@ -86,15 +88,19 @@ def dataset_make(ctx, **kwargs):
             return entry
 
         part = test.map(to_assessor_entry)
-        assessor_dataset_parts.append(part)
+        ds_parts.append(part)
 
-    assessor_dataset = dse.concatenate_all(assessor_dataset_parts)
-    assert assessor_dataset.cardinality() == dataset.cardinality()
+    assessor_ds = dse.concatenate_all(ds_parts)
+    assert assessor_ds.cardinality() == dataset.cardinality()
 
-    assessor_dataset_path = Path(
-        f"artifacts/datasets/{args.dataset}/{args.model}/kfold_{args.folds}/")
-    print("Saving assessor model dataset. This is super slow because TF dataset API sucks a bit.")
-    tf.data.experimental.save(assessor_dataset, str(assessor_dataset_path))
+    print("Saving assessor model dataset. This is currently super slow because we're doing non batched inference")
+    assessor_ds_path = dataset_make.artifact_location(args.dataset, args.model, n_folds)
+    tf.data.experimental.save(assessor_ds, str(assessor_ds_path))
+
+
+# Add an attribute to the function / command that tells where it will store the artifact
+cast(Any, dataset_make).artifact_location = lambda dataset, model, n_folds: Path(
+    f"artifacts/datasets/{dataset}/{model}/kfold_{n_folds}/")
 
 
 def normalize_img(image, label):

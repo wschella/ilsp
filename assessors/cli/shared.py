@@ -4,19 +4,19 @@ from abc import ABC, abstractmethod
 import click
 
 import assessors.models as models
-from assessors.models.model import BaseModel
+from assessors.models import ModelDefinition
 
 
-def get_model(dataset, model_name) -> type[BaseModel]:
-    model: type[BaseModel] = {  # type: ignore
+def get_model_def(dataset, model_name) -> type[ModelDefinition]:
+    model: type[ModelDefinition] = {  # type: ignore
         'mnist': models.MNISTDefault,
         'cifar10': models.CIFAR10Default,
     }[dataset]
     return model
 
 
-def get_assessor(dataset, model_name) -> type[BaseModel]:
-    model: type[BaseModel] = {  # type: ignore
+def get_assessor_def(dataset, model_name) -> type[ModelDefinition]:
+    model: type[ModelDefinition] = {  # type: ignore
         'mnist': {
             "default": models.MNISTAssessorProbabilistic,
             "prob": models.MNISTAssessorProbabilistic,

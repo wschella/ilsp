@@ -6,12 +6,11 @@ import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.python.data.ops.dataset_ops import Dataset as TFDataset
 
-from assessors.models.model import TFModel
-import assessors.utils.callbacks_extra as callbacks
-from assessors.models.shared.wide_resnet import wide_resnet
+from assessors.models.abstraction.tf_model import TFModelDefinition
+from assessors.models.architectures.wide_resnet import wide_resnet
 
 
-class CIFAR10Default(TFModel):
+class CIFAR10Default(TFModelDefinition):
     input_shape: Tuple[int, int, int] = (32, 32, 3)
     # depth: int = 28
     depth = 16
@@ -21,6 +20,9 @@ class CIFAR10Default(TFModel):
     num_classes: int = 10
     model: Optional[keras.Model] = None
     epochs: int = 10
+
+    def name(self) -> str:
+        return "mnist_default"
 
     def definition(self, compiled: bool = True):
         definition = wide_resnet(
@@ -39,30 +41,18 @@ class CIFAR10Default(TFModel):
 
         return definition
 
-    def train(self, dataset, validation) -> CIFAR10Default:
-        # Try first to restore an entire saved model
-        if (model := self.try_restore_saved()) is not None:
-            self.model = model
-            return self
+    def train_pipeline(self, ds: TFDataset) -> TFDataset:
+        return ds.map(normalize_img, num_parallel_calls=tf.data.experimental.AUTOTUNE)\
+            .cache()\
+            .shuffle(1000)\
+            .batch(128)\
+            .prefetch(tf.data.experimental.AUTOTUNE)
 
-        # Try now to restore from checkpoints
-        model = self.definition()
-        (ckpt_manager, epoch) = self.get_checkpoint(model)
-        ckpt_callback = callbacks.EpochCheckpointManagerCallback(ckpt_manager, epoch)
-
-        # Actually train
-        model.fit(
-            train_pipeline(dataset),
-            epochs=self.epochs,
-            validation_data=test_pipeline(validation),
-            initial_epoch=int(epoch),
-            callbacks=[ckpt_callback]
-        )
-        self.save(model)
-        return self
-
-    def evaluate(self, dataset):
-        self.model.evaluate(test_pipeline(dataset))
+    def test_pipeline(self, ds: TFDataset) -> TFDataset:
+        return ds.map(normalize_img, num_parallel_calls=tf.data.experimental.AUTOTUNE)\
+            .cache()\
+            .batch(128)\
+            .prefetch(tf.data.experimental.AUTOTUNE)
 
 
 class CIFAR10AssessorProbabilistic(CIFAR10Default):
@@ -85,34 +75,6 @@ class CIFAR10AssessorProbabilistic(CIFAR10Default):
         )
 
         return definition
-
-
-# def cifar10(**kwargs) -> Model:
-#     base: Model = shared.baselines.cifar10.model(compiled=False, **kwargs)
-
-#     # Remove the last (classification) layer, and add a regression one instead.
-#     outputs = keras.layers.Dense(1, name="regression")(base.layers[-2].output)
-#     model: Model = Model(inputs=base.inputs, outputs=outputs)
-#     model.compile(
-#         optimizer=keras.optimizers.Adam(0.001),
-#         loss=keras.losses.mean_squared_error,
-#     )
-#     return model
-
-
-def train_pipeline(ds: TFDataset):
-    return ds.map(normalize_img, num_parallel_calls=tf.data.experimental.AUTOTUNE)\
-        .cache()\
-        .shuffle(1000)\
-        .batch(128)\
-        .prefetch(tf.data.experimental.AUTOTUNE)
-
-
-def test_pipeline(ds: TFDataset):
-    return ds.map(normalize_img, num_parallel_calls=tf.data.experimental.AUTOTUNE)\
-        .cache()\
-        .batch(128)\
-        .prefetch(tf.data.experimental.AUTOTUNE)
 
 
 def normalize_img(image, label):

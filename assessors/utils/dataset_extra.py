@@ -24,6 +24,7 @@ def total_size(ds: DatasetInfo) -> int:
 
 def enumerate_dict(ds: tf.data.Dataset, key: str = 'index') -> tf.data.Dataset:
     """
+    TODO: Test
     Enumerate a Dataset by adding the index of the entry to it's FeaturesDict.
     This will error if the DS elements are any other type than dictionaries.
     """
