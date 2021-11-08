@@ -7,6 +7,7 @@ import click
 
 import tensorflow as tf
 from tensorflow.python.data.ops.dataset_ops import Dataset as TFDataset
+from assessors.core.datasets import PredictionRecord
 
 from assessors.utils import dataset_extra as dse
 from assessors.core import ModelDefinition, Restore, TFDatasetWrapper, CustomDataset
@@ -59,7 +60,7 @@ def train_base(ctx, **kwargs):
     path = Path(f"artifacts/models/{args.dataset}/{args.model}/base/")
     model_def: ModelDefinition = get_model_def(args.dataset, args.model)()
 
-    (train, test) = dse.split_absolute(dataset, dataset.cardinality() - args.test_size)
+    (train, test) = dse.split_absolute(dataset, -args.test_size)
     print(f'Train size: {len(train)}, test size: {len(test)}')
     model = model_def.train(train, validation=test, restore=Restore(path, args.restore))
     model.save(path)
@@ -129,15 +130,15 @@ def train_assessor(ctx, **kwargs):
     [dataset_name, model_name] = args.model.split('_')
     model_def: ModelDefinition = get_assessor_def(dataset_name, model_name)()
 
-    def to_binary_result(entry):
-        (pred, y_true) = entry["prediction"], entry["label"]
-        return entry | {"bin_result": tf.math.argmax(pred, axis=1) == y_true}
+    def to_supervised(record: PredictionRecord):
+        return (record['inst_features'], record['syst_pred_score'])
 
-    dataset: TFDataset = CustomDataset(path=args.dataset).load_all()
-    dataset = dse.to_supervised(dataset.map(to_binary_result), x="image", y="bin_result")
+    dataset: TFDataset = CustomDataset(path=args.dataset) \
+        .load_all() \
+        .map(to_supervised)
 
     path = Path(f"artifacts/models/{dataset_name}/{model_name}/assessor/")
 
-    (train, test) = dse.split_absolute(dataset, dataset.cardinality() - args.test_size)
+    (train, test) = dse.split_absolute(dataset, -args.test_size)
     model = model_def.train(train, validation=test, restore=Restore(path, args.restore))
     model.save(path)

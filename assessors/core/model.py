@@ -19,6 +19,10 @@ class ModelDefinition(ABC):
     def try_restore_from(self, path: Path) -> Optional[TrainedModel]:
         pass
 
+    @abstractmethod
+    def score(self, y_true, y_pred):
+        pass
+
 
 class TrainedModel(ABC):
     @abstractmethod
@@ -26,19 +30,19 @@ class TrainedModel(ABC):
         pass
 
     @abstractmethod
-    def evaluate(self, dataset, callback):
-        """
-        Should log the instance wise evaluation results to file as CSV with folllowing columns:
-        y_true, y_pred, prediction, loss, is_correct
-        """
-        pass
-
-    @abstractmethod
     def loss(self, y_true, y_pred):
         pass
 
     @abstractmethod
+    def score(self, y_true, y_pred):
+        pass
+
+    @abstractmethod
     def predict(self, entry, **kwargs):
+        pass
+
+    @abstractmethod
+    def predict_all(self, dataset, **kwargs):
         pass
 
     def __call__(self, entry, **kwargs):

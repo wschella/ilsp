@@ -1,12 +1,11 @@
 from __future__ import annotations
 from typing import *
-from pathlib import Path
 
 import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.python.data.ops.dataset_ops import Dataset as TFDataset
 
-from assessors.models.abstraction.tf_model import TFModelDefinition
+from assessors.core import TFModelDefinition
 from assessors.models.architectures.wide_resnet import wide_resnet
 
 

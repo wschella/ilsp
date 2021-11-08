@@ -62,7 +62,10 @@ def split_absolute(ds: tf.data.Dataset, count: float) -> Tuple[tf.data.Dataset, 
     """
     Split a Dataset in two Datasets by first taking :count: items, and leaving
     the rest for the other dataset.
+    If :count: is negative, we take len(ds) - :count: items instead.
     """
+    if count < 0:
+        count = ds.cardinality() + count
     return (ds.take(count), ds.skip(count))
 
 

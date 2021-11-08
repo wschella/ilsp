@@ -25,6 +25,22 @@ class PredictionRecord(TypedDict):
     syst_features: Any
     syst_prediction: Any
     syst_pred_loss: Any
+    syst_pred_score: Any
+
+
+class AssessorPredictionRecord(TypedDict):
+    # This takes up too much space, and we usually don't need it for analysis,
+    # and when we do, we should load it separately and use `inst_index` instead.
+    # inst_features: Any
+
+    inst_index: Any
+    inst_label: Any
+    syst_features: Any
+    syst_prediction: Any
+    syst_pred_loss: Any
+    syst_pred_score: Any
+    asss_prediction: Any
+    asss_pred_loss: Any
 
 
 E = TypeVar('E', covariant=True)

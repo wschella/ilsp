@@ -14,6 +14,7 @@ from tensorflow.python.data.ops.dataset_ops import Dataset as TFDataset
 from assessors.core import ModelDefinition, TFDatasetWrapper, CustomDataset, PredictionRecord
 from assessors.cli.shared import CommandArguments, get_model_def, get_assessor_def
 from assessors.cli.cli import cli, CLIArgs
+from assessors.core.datasets import AssessorPredictionRecord
 from assessors.utils import dataset_extra as dse
 
 
@@ -84,23 +85,31 @@ def evaluate_assessor(ctx, **kwargs):
     # Load & mangle dataset
     dataset: TFDataset[PredictionRecord] = CustomDataset(path=args.dataset).load_all()
 
-    def to_binary_result(record: PredictionRecord):
-        (pred, y_true) = record["syst_prediction"], record["inst_label"]
-        return {
-            "inst_features": record["inst_features"],
-            "inst_is_correct": tf.math.argmax(pred, axis=1) == y_true
-        }
-
-    supervised = dse.to_supervised(dataset.map(to_binary_result),
-                                   x="inst_features", y="inst_is_correct")
-    (_train, test) = dse.split_absolute(supervised, supervised.cardinality() - args.test_size)
+    def to_supervised(record: PredictionRecord):
+        return (record['inst_features'], record['syst_pred_score'])
+    supervised = dataset.map(to_supervised)
+    (_train, test) = dse.split_absolute(supervised, -args.test_size)
 
     # Evaluate and log
     os.makedirs(os.path.dirname(args.output_path), exist_ok=True)
-    with open(args.output_path, 'w', newline='') as csvfile:
-        model.evaluate(test, csvfile)
+    with open(args.output_path, "w") as f:
+        fieldnames = list(AssessorPredictionRecord.__annotations__.keys())
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
 
+        asss_predictions = model.predict_all(test)
+
+        for record, asss_pred in zip(dataset.as_numpy_iterator(), asss_predictions):
+            record: PredictionRecord = record
+            record.pop('inst_features')
+
+            record: AssessorPredictionRecord = record
+            record["asss_prediction"] = asss_pred
+            record["asss_pred_loss"] = int(model.loss(record['syst_pred_score'], asss_pred))
+            writer.writerow(record)
+    print(f"Wrote results to {args.output_path}")
+
+    # Print some simple results
     with open(args.output_path, 'r', newline='') as csvfile:
         df = pd.read_csv(csvfile)
         print(df.describe())
-        print(df.head(10))

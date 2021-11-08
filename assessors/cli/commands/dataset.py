@@ -3,13 +3,12 @@ from dataclasses import dataclass
 from pathlib import *
 
 import click
-from tqdm import tqdm
 
 import tensorflow as tf
 
-from assessors.core import ModelDefinition, TFDatasetWrapper
+from assessors.core import ModelDefinition, TFDatasetWrapper, PredictionRecord
 from assessors.utils import dataset_extra as dse
-from assessors.cli.shared import CommandArguments, PredictionRecord, get_model_def
+from assessors.cli.shared import CommandArguments, get_model_def
 from assessors.cli.cli import cli, CLIArgs
 
 
@@ -70,6 +69,7 @@ def dataset_make(ctx, **kwargs):
     dir = Path(f"artifacts/models/{args.dataset}/{args.model}/kfold_{args.folds}/")
     n_folds = len(list(dir.glob("*")))
 
+    # TODO: Fix non batched inference
     for i, (_train, test) in enumerate(dse.k_folds(dataset, n_folds)):
         path = dir / str(i)
         model = model_def.try_restore_from(path)
@@ -89,6 +89,7 @@ def dataset_make(ctx, **kwargs):
                 'syst_features': i,
                 'syst_prediction': y_pred,
                 'syst_pred_loss': model.loss(y_true, y_pred),
+                'syst_pred_score': model.score(y_true, y_pred),
             }
 
         part = test.map(to_prediction_record)

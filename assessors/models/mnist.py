@@ -1,16 +1,11 @@
 from __future__ import annotations
 from typing import *
-from pathlib import Path
-import itertools
-
-from tqdm import tqdm
 
 import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.python.data.ops.dataset_ops import Dataset as TFDataset
 
-from assessors.models.abstraction.tf_model import TFModelDefinition
-import assessors.utils.callbacks_extra as callbacks
+from assessors.core import TFModelDefinition
 
 
 def normalize_img(image, label):
@@ -40,6 +35,9 @@ class MNISTDefault(TFModelDefinition):
 
         return model
 
+    def score(self, y_true, prediction):
+        return int(tf.math.argmax(prediction, axis=1) == y_true)
+
     def train_pipeline(self, ds: TFDataset) -> TFDataset:
         return ds.map(normalize_img, num_parallel_calls=tf.data.experimental.AUTOTUNE)\
             .cache()\
@@ -50,13 +48,7 @@ class MNISTDefault(TFModelDefinition):
     def test_pipeline(self, ds: TFDataset) -> TFDataset:
         return ds.map(normalize_img, num_parallel_calls=tf.data.experimental.AUTOTUNE)\
             .cache()\
-            .batch(128)\
-            .prefetch(tf.data.experimental.AUTOTUNE)
-
-    def eval_pipeline(self, ds: TFDataset) -> TFDataset:
-        return ds.map(normalize_img, num_parallel_calls=tf.data.experimental.AUTOTUNE)\
-            .cache()\
-            .batch(512)\
+            .batch(256)\
             .prefetch(tf.data.experimental.AUTOTUNE)
 
 
@@ -78,3 +70,6 @@ class MNISTAssessorProbabilistic(MNISTDefault):
         )
 
         return model
+
+    def score(self, y_true, prediction):
+        raise NotImplementedError()

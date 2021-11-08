@@ -28,10 +28,10 @@ class TFModelDefinition(ModelDefinition, ABC):
 
     @abstractmethod
     def test_pipeline(self, ds: TFDataset) -> TFDataset:
-        raise NotImplementedError()
-
-    @abstractmethod
-    def eval_pipeline(self, ds: TFDataset) -> TFDataset:
+        """
+        Test pipeline should normalize inputs similar to the training pipeline
+        and set the batch size as much as the hardware allows.
+        """
         raise NotImplementedError()
 
     def train(self, dataset, validation, restore: Restore) -> TrainedModel:
@@ -67,11 +67,11 @@ class TFModelDefinition(ModelDefinition, ABC):
             callbacks=[callbacks.EpochCheckpointManagerCallback(ckpt_manager, epoch)]
         )
 
-        return TrainedTFModel(model)
+        return TrainedTFModel(model, self)
 
     def try_restore_from(self, path: Path) -> Optional[TrainedModel]:
         if (model := self.__try_restore_from(path)) is not None:
-            return TrainedTFModel(model)
+            return TrainedTFModel(model, self)
         else:
             return None
 
@@ -91,12 +91,17 @@ class TFModelDefinition(ModelDefinition, ABC):
 
 class TrainedTFModel(TrainedModel):
     model: KerasModel
+    definition: TFModelDefinition
 
-    def __init__(self, model: KerasModel):
+    def __init__(self, model: KerasModel, definition: TFModelDefinition):
         self.model = model
+        self.definition = definition
 
     def loss(self, y_true, y_pred):
         return self.model.loss(y_true, y_pred)
+
+    def score(self, y_true, predictions):
+        return self.definition.score(y_true, predictions)
 
     def save(self, path: Path):
         self.model.save(str(path))
@@ -104,34 +109,9 @@ class TrainedTFModel(TrainedModel):
     def predict(self, entry):
         return self.model(entry)
 
-    # TODO: Fix
-    def eval_pipeline(self, ds: TFDataset) -> TFDataset:
-        return ds.map(normalize_img, num_parallel_calls=tf.data.experimental.AUTOTUNE)\
-            .cache()\
-            .batch(512)\
-            .prefetch(tf.data.experimental.AUTOTUNE)
-
-    def evaluate(self, dataset, log_file):
-
-        writer = csv.DictWriter(
-            log_file,
-            fieldnames=["index", "y_true", "y_pred", "prediction", "loss", "is_correct"])
-        writer.writeheader()
-
-        ds = self.eval_pipeline(dataset)
-        # ds_iter = iter(dataset)
-
-        predictions = self.model.predict(ds, verbose=1)
-        targets = list(itertools.chain.from_iterable(y_batch.numpy() for _x, y_batch in ds))
-        for y_true, pred in tqdm(zip(targets, predictions), total=len(targets)):
-            y_pred = pred > 0.5
-            # y_pred = tf.math.argmax(pred, axis=1)
-            loss = self.model.loss(y_true, pred)
-            writer.writerow({
-                # 'index': int(next(ds_iter)["index"]),
-                'y_true': y_true[0], 'y_pred': y_pred[0], 'prediction': pred[0],
-                'loss': loss.numpy(), 'is_correct': (y_true == y_pred)[0]
-            })
+    def predict_all(self, dataset):
+        ds = self.definition.test_pipeline(dataset)
+        return self.model.predict(ds, verbose=1)
 
 
 def normalize_img(image, label):
