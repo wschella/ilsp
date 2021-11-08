@@ -13,7 +13,7 @@ from tensorflow.python.data.ops.dataset_ops import Dataset as TFDataset
 
 from assessors.datasets import TFDatasetWrapper, CustomDataset
 from assessors.models import ModelDefinition
-from assessors.cli.shared import CommandArguments, get_model_def, get_assessor_def
+from assessors.cli.shared import CommandArguments, PredictionRecord, get_model_def, get_assessor_def
 from assessors.cli.cli import cli, CLIArgs
 from assessors.utils import dataset_extra as dse
 
@@ -53,6 +53,8 @@ class EvaluateAssessorArgs(CommandArguments):
     parent: CLIArgs = CLIArgs()
     dataset: Path = Path("artifacts/datasets/mnist/kfold/")
     test_size: int = 10000
+    output_path: Path = Path("./results.csv")
+    overwrite: bool = False
     model: str = "mnist_default"
 
     def validate(self):
@@ -61,33 +63,45 @@ class EvaluateAssessorArgs(CommandArguments):
 
 
 @cli.command(name='eval-assessor')
-@click.argument('dataset', type=click.Path(exists=True))
+@click.argument('dataset', type=click.Path(exists=True, file_okay=False))
+@click.option('-o', '--output-path', default="./results.csv", help="The output path")
+@click.option('--overwrite', is_flag=True, help="Overwrite the output file if it exists", default=False)
 @click.option('-m', '--model', default='mnist_default', help="The model to evaluate")
 @click.pass_context
 def evaluate_assessor(ctx, **kwargs):
+    # Handle CLI args
     args = EvaluateAssessorArgs(parent=ctx.obj, **kwargs).validated()
+    if os.path.exists(args.output_path) and not args.overwrite:
+        click.confirm(f"The file {args.output_path} already exists. Overwrite?", abort=True)
 
+    # Load assessor model
     [dataset_name, model_name] = args.model.split('_')
     model_def: ModelDefinition = get_assessor_def(dataset_name, model_name)()
     model_path = Path(f"artifacts/models/{dataset_name}/{model_name}/assessor/")
     model = model_def.try_restore_from(model_path)
+    if model is None:
+        raise click.UsageError(f"Could not load model {args.model} at {model_path}")
 
-    dataset = TFDatasetWrapper(args.dataset)
-    dataset: TFDataset = CustomDataset(path=args.dataset).load_all()
+    # Load & mangle dataset
+    dataset: TFDataset[PredictionRecord] = CustomDataset(path=args.dataset).load_all()
 
-    def to_binary_result(entry):
-        (pred, y_true) = entry["prediction"], entry["label"]
-        return entry | {"bin_result": tf.math.argmax(pred, axis=1) == y_true}
+    def to_binary_result(record: PredictionRecord):
+        (pred, y_true) = record["syst_prediction"], record["inst_label"]
+        return {
+            "inst_features": record["inst_features"],
+            "inst_is_correct": tf.math.argmax(pred, axis=1) == y_true
+        }
 
-    supervised = dse.to_supervised(dataset.map(to_binary_result), x="image", y="bin_result")
+    supervised = dse.to_supervised(dataset.map(to_binary_result),
+                                   x="inst_features", y="inst_is_correct")
     (_train, test) = dse.split_absolute(supervised, supervised.cardinality() - args.test_size)
 
-    path = Path(f"artifacts/results/{dataset_name}_{model_name}_assessor.csv")
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, 'w', newline='') as csvfile:
+    # Evaluate and log
+    os.makedirs(os.path.dirname(args.output_path), exist_ok=True)
+    with open(args.output_path, 'w', newline='') as csvfile:
         model.evaluate(test, csvfile)
 
-    with open(path, 'r', newline='') as csvfile:
+    with open(args.output_path, 'r', newline='') as csvfile:
         df = pd.read_csv(csvfile)
         print(df.describe())
         print(df.head(10))

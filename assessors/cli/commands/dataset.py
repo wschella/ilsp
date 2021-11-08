@@ -10,7 +10,7 @@ import tensorflow as tf
 
 from assessors.datasets import TFDatasetWrapper
 from assessors.utils import dataset_extra as dse
-from assessors.cli.shared import CommandArguments, get_model_def
+from assessors.cli.shared import CommandArguments, PredictionRecord, get_model_def
 from assessors.cli.cli import cli, CLIArgs
 
 
@@ -80,14 +80,19 @@ def dataset_make(ctx, **kwargs):
         # https://github.com/OpenNMT/OpenNMT-tf/pull/842
         models.append(model)
 
-        def to_assessor_entry(entry):
+        def to_prediction_record(entry) -> PredictionRecord:
             x, y_true = normalize_img(entry['image'], entry['label'])
             y_pred = model(x.reshape((1) + x.shape))
-            loss = model.loss(y_true, y_pred)
-            entry = entry | {'prediction': y_pred, 'loss': loss}
-            return entry
+            return {
+                'inst_index': entry['index'],
+                'inst_features': entry['image'],
+                'inst_label': entry['label'],
+                'syst_features': i,
+                'syst_prediction': y_pred,
+                'syst_pred_loss': model.loss(y_true, y_pred),
+            }
 
-        part = test.map(to_assessor_entry)
+        part = test.map(to_prediction_record)
         ds_parts.append(part)
 
     assessor_ds = dse.concatenate_all(ds_parts)

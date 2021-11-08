@@ -80,7 +80,7 @@ def peek(ds: tf.data.Dataset) -> Any:
     """
     Peek at the first element of a Dataset. Likely highly inefficient.
     """
-    return iter(ds.take(1)).get_next()  # type: ignore
+    return iter(ds.take(1)).next()  # type: ignore
 
 
 def k_folds(ds: tf.data.Dataset, n_folds: int) -> List[Tuple[tf.data.Dataset, tf.data.Dataset]]:

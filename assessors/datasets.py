@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import *
 from operator import itemgetter
 from pathlib import Path
