@@ -2,23 +2,7 @@ from typing import *
 from abc import ABC, abstractmethod
 
 import assessors.models as models
-from assessors.models import ModelDefinition
-
-
-class PredictionRecord(TypedDict):
-    """
-    Will actually be a TF FeaturesDict [1] at runtime.
-    But we only care about the field names and their types, the API to access
-    them is the same.
-
-    [1] https://www.tensorflow.org/datasets/api_docs/python/tfds/features/FeaturesDict.
-    """
-    inst_index: Any
-    inst_features: Any
-    inst_label: Any
-    syst_features: Any
-    syst_prediction: Any
-    syst_pred_loss: Any
+from assessors.core import ModelDefinition
 
 
 def get_model_def(dataset, model_name) -> type[ModelDefinition]:

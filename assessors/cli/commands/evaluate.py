@@ -11,9 +11,8 @@ import pandas as pd
 import tensorflow as tf
 from tensorflow.python.data.ops.dataset_ops import Dataset as TFDataset
 
-from assessors.datasets import TFDatasetWrapper, CustomDataset
-from assessors.models import ModelDefinition
-from assessors.cli.shared import CommandArguments, PredictionRecord, get_model_def, get_assessor_def
+from assessors.core import ModelDefinition, TFDatasetWrapper, CustomDataset, PredictionRecord
+from assessors.cli.shared import CommandArguments, get_model_def, get_assessor_def
 from assessors.cli.cli import cli, CLIArgs
 from assessors.utils import dataset_extra as dse
 

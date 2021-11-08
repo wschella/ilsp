@@ -6,7 +6,7 @@ import click
 
 from assessors.cli.shared import CommandArguments
 from assessors.cli.cli import cli, CLIArgs
-from assessors.datasets import CustomDataset
+from assessors.core import CustomDataset
 
 
 @dataclass

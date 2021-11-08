@@ -9,6 +9,24 @@ from tensorflow.python.data.ops.dataset_ops import Dataset as TFDataset
 from tensorflow_datasets.core.utils.read_config import ReadConfig
 
 
+class PredictionRecord(TypedDict):
+    """
+    A single record or dataset entry to feed into assessor models.
+
+    Will actually be a TF FeaturesDict [1] at runtime.
+    But we only care about the field names and their types, the API to access
+    them is the same.
+
+    [1] https://www.tensorflow.org/datasets/api_docs/python/tfds/features/FeaturesDict.
+    """
+    inst_index: Any
+    inst_features: Any
+    inst_label: Any
+    syst_features: Any
+    syst_prediction: Any
+    syst_pred_loss: Any
+
+
 E = TypeVar('E', covariant=True)
 
 
@@ -39,10 +57,6 @@ class TFDatasetWrapper(Generic[E]):
     def load_all(self) -> TFDataset[E]:
         train, test = itemgetter('train', 'test')(self.load())
         return train.concatenate(test)
-
-
-MNIST: TFDatasetWrapper[Tuple[Any, int]] = TFDatasetWrapper('mnist')
-CIFAR10: TFDatasetWrapper[Tuple[Any, int]] = TFDatasetWrapper('cifar10')
 
 
 class CustomDataset(Generic[E]):

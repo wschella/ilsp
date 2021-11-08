@@ -8,9 +8,8 @@ import click
 import tensorflow as tf
 from tensorflow.python.data.ops.dataset_ops import Dataset as TFDataset
 
-from assessors.datasets import TFDatasetWrapper, CustomDataset
 from assessors.utils import dataset_extra as dse
-from assessors.models import ModelDefinition, TrainedModel, Restore
+from assessors.core import ModelDefinition, Restore, TFDatasetWrapper, CustomDataset
 from assessors.cli.shared import CommandArguments, get_model_def, get_assessor_def
 from assessors.cli.cli import cli, CLIArgs
 

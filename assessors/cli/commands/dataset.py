@@ -1,4 +1,3 @@
-from assessors.models import ModelDefinition
 from typing import *
 from dataclasses import dataclass
 from pathlib import *
@@ -8,7 +7,7 @@ from tqdm import tqdm
 
 import tensorflow as tf
 
-from assessors.datasets import TFDatasetWrapper
+from assessors.core import ModelDefinition, TFDatasetWrapper
 from assessors.utils import dataset_extra as dse
 from assessors.cli.shared import CommandArguments, PredictionRecord, get_model_def
 from assessors.cli.cli import cli, CLIArgs

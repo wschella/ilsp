@@ -12,7 +12,7 @@ from tensorflow.python.data.ops.dataset_ops import Dataset as TFDataset
 from tensorflow.keras.models import Model as KerasModel
 import assessors.utils.callbacks_extra as callbacks
 
-from assessors.models.abstraction.model import ModelDefinition, Restore, TrainedModel
+from assessors.core import ModelDefinition, Restore, TrainedModel
 
 
 class TFModelDefinition(ModelDefinition, ABC):
