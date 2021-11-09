@@ -92,13 +92,12 @@ def dataset_make(ctx, **kwargs):
                 'syst_pred_score': model.score(y_true, y_pred),
             }
 
-        part = test.map(to_prediction_record)
+        part = test.map(to_prediction_record, num_parallel_calls=tf.data.experimental.AUTOTUNE)
         ds_parts.append(part)
 
-    assessor_ds = dse.concatenate_all(ds_parts)
-    assert assessor_ds.cardinality() == dataset.cardinality()
+    assessor_ds = dse.interleave_kfold(ds_parts)
 
-    print("Saving assessor model dataset. This is currently super slow because we're doing non batched inference")
+    print("Saving assessor model dataset. This is currently quite slow because we're doing non batched inference")
     assessor_ds_path = dataset_make.artifact_location(args.dataset, args.model, n_folds)
     tf.data.experimental.save(assessor_ds, str(assessor_ds_path))
 

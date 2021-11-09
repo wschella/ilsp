@@ -109,3 +109,16 @@ def k_folds(ds: tf.data.Dataset, n_folds: int) -> List[Tuple[tf.data.Dataset, tf
         folds.append((train, test))
 
     return folds
+
+
+def interleave_kfold(folds: List[tf.data.Dataset], block_length: int = 1) -> tf.data.Dataset:
+    """
+    Interleave the folds into a single dataset
+    """
+    return tf.data.Dataset.from_tensor_slices(folds)\
+        .interleave(
+            lambda x: x,
+            cycle_length=len(folds),
+            block_length=1,
+            num_parallel_calls=tf.data.experimental.AUTOTUNE
+    )
