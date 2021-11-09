@@ -99,7 +99,7 @@ def k_folds(ds: tf.data.Dataset, n_folds: int) -> List[Tuple[tf.data.Dataset, tf
     size = ds.cardinality() // n_folds
 
     folds: List[Tuple[tf.data.Dataset, tf.data.Dataset]] = []
-    for fold_i in range(n_folds):
+    for fold_i in reversed(range(n_folds)):
         test_set_start = fold_i * size
         test_set_end = test_set_start + size
 

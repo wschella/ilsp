@@ -52,8 +52,8 @@ def list_dataset_split(path: Path, field: str, split_at: int, unique: bool) -> N
         train = train.unique()
         test = test.unique()
 
-    # for value in train:
-    #     print(value)
+    for value in train:
+        print(value)
 
     input("Press enter to continue...")
     for value in test:
