@@ -8,8 +8,8 @@ authors     = ["Wout Schellaert <wout.schellaert@gmail.com>"]
 python              = "^3.9"
 tensorflow-gpu      = "^2.6.0"
 tensorflow-datasets = "^4.4.0"
-tqdm = "^4.62.3"
-pandas = "^1.3.3"
+tqdm                = "^4.62.3"
+pandas              = "^1.3.3"
 
 [tool.poetry.dev-dependencies]
 ipywidgets         = "^7.6.3"
@@ -24,6 +24,7 @@ poethepoet         = "^0.10.0"
 wandb              = "^0.11.2"
 Pillow             = "^8.3.1"  # Needed for wandb Image logging
 click-option-group = "^0.5.3"
+pytest             = "^6.2.5"
 
 [build-system]
 requires      = ["poetry-core>=1.0.0"]
@@ -31,6 +32,12 @@ build-backend = "poetry.core.masonry.api"
 
 # https://github.com/nat-n/poethepoet
 [tool.poe.tasks]
-jpt = { shell = "jupyter lab --no-browser --port=8888" }
-run = { script = "assessors.main:run" }
-gpu = { shell = "python scripts/gpu_test.py" }
+jpt  = { shell = "jupyter lab --no-browser --port=8888" }
+run  = { script = "assessors.main:run" }
+test = { shell = "pytest --pyargs assessors" }
+gpu  = { shell = "python scripts/gpu_test.py" }
+
+[tool.pytest.ini_options]
+filterwarnings = [
+  'ignore:the imp module is deprecated:DeprecationWarning', # Thrown by TF 2.6, check on update
+]

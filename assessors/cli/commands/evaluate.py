@@ -7,6 +7,7 @@ import os
 
 import click
 import pandas as pd
+from tqdm import tqdm
 
 import tensorflow as tf
 from tensorflow.python.data.ops.dataset_ops import Dataset as TFDataset
@@ -50,8 +51,8 @@ def evaluate_base(ctx, **kwargs):
 
 @dataclass
 class EvaluateAssessorArgs(CommandArguments):
+    dataset: Path
     parent: CLIArgs = CLIArgs()
-    dataset: Path = Path("artifacts/datasets/mnist/kfold/")
     test_size: int = 10000
     output_path: Path = Path("./results.csv")
     overwrite: bool = False
@@ -65,6 +66,7 @@ class EvaluateAssessorArgs(CommandArguments):
 @cli.command(name='eval-assessor')
 @click.argument('dataset', type=click.Path(exists=True, file_okay=False))
 @click.option('-o', '--output-path', default="./results.csv", help="The output path")
+@click.option('-t', '--test-size', default=10000, help="The test set size")
 @click.option('--overwrite', is_flag=True, help="Overwrite the output file if it exists", default=False)
 @click.option('-m', '--model', default='mnist_default', help="The model to evaluate")
 @click.pass_context
@@ -83,12 +85,11 @@ def evaluate_assessor(ctx, **kwargs):
         raise click.UsageError(f"Could not load model {args.model} at {model_path}")
 
     # Load & mangle dataset
-    dataset: TFDataset[PredictionRecord] = CustomDataset(path=args.dataset).load_all()
+    _dataset: TFDataset[PredictionRecord] = CustomDataset(path=args.dataset).load_all()
+    (_train, test) = dse.split_absolute(_dataset, -args.test_size)
 
     def to_supervised(record: PredictionRecord):
         return (record['inst_features'], record['syst_pred_score'])
-    supervised = dataset.map(to_supervised)
-    (_train, test) = dse.split_absolute(supervised, -args.test_size)
 
     # Evaluate and log
     os.makedirs(os.path.dirname(args.output_path), exist_ok=True)
@@ -97,9 +98,10 @@ def evaluate_assessor(ctx, **kwargs):
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
 
-        asss_predictions = model.predict_all(test)
+        asss_predictions = model.predict_all(test.map(to_supervised))
 
-        for record, asss_pred in zip(dataset.as_numpy_iterator(), asss_predictions):
+        print("Writing results. No idea yet why this is slow.")
+        for record, asss_pred in tqdm(zip(test.as_numpy_iterator(), asss_predictions), total=len(test)):
             record: PredictionRecord = record
             record.pop('inst_features')
 

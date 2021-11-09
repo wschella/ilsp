@@ -58,7 +58,7 @@ def split(ds: tf.data.Dataset, part: float) -> Tuple[tf.data.Dataset, tf.data.Da
     return (ds.take(end), ds.skip(end))
 
 
-def split_absolute(ds: tf.data.Dataset, count: float) -> Tuple[tf.data.Dataset, tf.data.Dataset]:
+def split_absolute(ds: tf.data.Dataset, count: int) -> Tuple[tf.data.Dataset, tf.data.Dataset]:
     """
     Split a Dataset in two Datasets by first taking :count: items, and leaving
     the rest for the other dataset.
