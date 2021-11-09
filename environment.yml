@@ -6,6 +6,7 @@ channels:
 # with the libraries defined in pyproject.toml, which mostly matters for the like 
 # of tensorflow and torch.
 # Everything we can, we manage with poetry.
+# https://www.tensorflow.org/install/source#gpu
 dependencies:
   - python=3.9
   - pip=21.1
