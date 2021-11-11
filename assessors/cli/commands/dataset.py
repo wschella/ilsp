@@ -6,9 +6,11 @@ import click
 
 import tensorflow as tf
 
-from assessors.core import ModelDefinition, TFDatasetWrapper, PredictionRecord
+from assessors.core import ModelDefinition, PredictionRecord
+from assessors.core import Dataset, DatasetDescription
+from assessors.core.model import TrainedModel
 from assessors.utils import dataset_extra as dse
-from assessors.cli.shared import CommandArguments, get_model_def
+from assessors.cli.shared import CommandArguments, get_dataset_description, get_model_def
 from assessors.cli.cli import cli, CLIArgs
 
 
@@ -30,8 +32,8 @@ def dataset_download(ctx, **kwargs):
     See https://www.tensorflow.org/datasets/catalog/overview for an overview of options.
     """
     args = DownloadArgs(parent=ctx.obj, **kwargs).validated()
-    dataset = TFDatasetWrapper(args.name)
-    dataset.load()
+    dataset: DatasetDescription = get_dataset_description(args.name)
+    dataset.download()
 
 
 @dataclass
@@ -59,10 +61,10 @@ def dataset_make(ctx, **kwargs):
     args = MakeKFoldArgs(parent=ctx.obj, **kwargs).validated()
 
     model_def: ModelDefinition = get_model_def(args.dataset, args.model)()
+    dataset_desc: DatasetDescription = get_dataset_description(args.dataset)
 
-    dataset = TFDatasetWrapper(args.dataset, as_supervised=False).load_all()
-    # TODO: This is not working, it enumerates last.
-    dataset = dse.enumerate_dict(dataset)
+    dataset: Dataset = dataset_desc.load_all()
+    dataset = dataset.map(lambda e: {'x': e[0], 'y': e[1]}).enumerate_dict()
 
     models = []
     ds_parts = []
@@ -72,7 +74,9 @@ def dataset_make(ctx, **kwargs):
     # TODO: Fix non batched inference
     for i, (_train, test) in enumerate(dse.k_folds(dataset, n_folds)):
         path = dir / str(i)
-        model = model_def.try_restore_from(path)
+        model = model_def.restore_from(path)
+        if model is None:
+            raise ValueError(f"No model found at {path}")
 
         # We need to keep a reference to the model because otherwise TF
         # prematurely deletes it.
@@ -80,26 +84,26 @@ def dataset_make(ctx, **kwargs):
         models.append(model)
 
         def to_prediction_record(entry) -> PredictionRecord:
-            x, y_true = normalize_img(entry['image'], entry['label'])
+            x, y_true = normalize_img(entry['x'], entry['y'])
             y_pred = model(x.reshape((1) + x.shape))
             return {
                 'inst_index': entry['index'],
-                'inst_features': entry['image'],
-                'inst_label': entry['label'],
+                'inst_features': entry['x'],
+                'inst_label': entry['y'],
                 'syst_features': i,
                 'syst_prediction': y_pred,
                 'syst_pred_loss': model.loss(y_true, y_pred),
                 'syst_pred_score': model.score(y_true, y_pred),
             }
 
-        part = test.map(to_prediction_record, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        part = test.map(to_prediction_record)
         ds_parts.append(part)
 
-    assessor_ds = dse.interleave_kfold(ds_parts)
-
     print("Saving assessor model dataset. This is currently quite slow because we're doing non batched inference")
-    assessor_ds_path = dataset_make.artifact_location(args.dataset, args.model, n_folds)
-    tf.data.experimental.save(assessor_ds, str(assessor_ds_path))
+    assessor_ds: Dataset = ds_parts[0].interleave_with(ds_parts[1:], cycle_length=n_folds)
+    assessor_ds_path = dataset_make.artifact_location(   # type: ignore
+        args.dataset, args.model, n_folds)
+    assessor_ds.save(assessor_ds_path)
 
 
 # Add an attribute to the function / command that tells where it will store the artifact
@@ -109,4 +113,4 @@ cast(Any, dataset_make).artifact_location = lambda dataset, model, n_folds: Path
 
 def normalize_img(image, label):
     """Normalizes images: `uint8` -> `float32`."""
-    return tf.cast(image, tf.float32) / 255., label
+    return tf.cast(image, tf.float32) / 255., label  # type: ignore

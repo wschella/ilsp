@@ -4,7 +4,7 @@ from pathlib import Path
 import click
 
 from assessors.cli.cli import cli
-from assessors.core import CustomDataset
+from assessors.core import Dataset, CustomDatasetDescription
 import assessors.utils.dataset_extra as dse
 
 
@@ -12,7 +12,7 @@ import assessors.utils.dataset_extra as dse
 @click.argument('path', type=click.Path(exists=True))
 @click.option('-w', '--without-fields', multiple=True, help="Fields to exclude from the dataset")
 def peek_dataset(path: Path, without_fields: List[str]) -> None:
-    ds = CustomDataset(path).load_all()
+    ds: Dataset = CustomDatasetDescription(path).load_all()
 
     if without_fields != []:
         def filter_fields(entry):
@@ -21,7 +21,7 @@ def peek_dataset(path: Path, without_fields: List[str]) -> None:
             return entry
         ds = ds.map(lambda x: filter_fields(x))
 
-    head = ds.take(1).as_numpy_iterator().next()
+    head = next(ds.take(1).as_numpy_iterator())
     print(head)
 
 
@@ -31,7 +31,7 @@ def peek_dataset(path: Path, without_fields: List[str]) -> None:
 @click.option('-u', '--unique', is_flag=True, help="List unique values only", default=False)
 @click.option('-h', '--head', default=0, help="Number of entries to show")
 def list_dataset(path: Path, field: str, unique: bool, head: int) -> None:
-    ds = CustomDataset(path).load_all()
+    ds: Dataset = CustomDatasetDescription(path).load_all()
     ds = ds.map(lambda x: x[field])
 
     if unique:
@@ -51,9 +51,9 @@ def list_dataset(path: Path, field: str, unique: bool, head: int) -> None:
 @click.option('-u', '--unique', is_flag=True, help="List unique values only", default=False)
 @click.option('-h', '--head', default=0, help="Number of entries to show")
 def list_dataset_split(path: Path, field: str, split_at: int, unique: bool, head: int) -> None:
-    ds = CustomDataset(path).load_all()
+    ds: Dataset = CustomDatasetDescription(path).load_all()
     ds = ds.map(lambda x: x[field])
-    (train, test) = dse.split_absolute(ds, split_at)
+    (train, test) = ds.split_absolute(split_at)
 
     if unique:
         train = train.unique()

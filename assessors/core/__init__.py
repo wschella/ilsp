@@ -1,3 +1,5 @@
 from assessors.core.model import ModelDefinition, TrainedModel, Restore
-from assessors.core.tf_model import TFModelDefinition
-from assessors.core.datasets import TFDatasetWrapper, CustomDataset, PredictionRecord
+from assessors.core.model_tensorflow import TFModelDefinition
+from assessors.core.dataset import DatasetDescription, Dataset
+from assessors.core.dataset_tensorflow import TFDatasetDescription, TFDataset, CustomDatasetDescription
+from assessors.core.datatypes import PredictionRecord, AssessorPredictionRecord

@@ -1,6 +1,5 @@
 from typing import *
 from dataclasses import dataclass
-from operator import itemgetter
 from pathlib import Path
 import csv
 import os
@@ -9,44 +8,9 @@ import click
 import pandas as pd
 from tqdm import tqdm
 
-import tensorflow as tf
-from tensorflow.python.data.ops.dataset_ops import Dataset as TFDataset
-
-from assessors.core import ModelDefinition, TFDatasetWrapper, CustomDataset, PredictionRecord
-from assessors.cli.shared import CommandArguments, get_model_def, get_assessor_def
+from assessors.core import ModelDefinition, CustomDatasetDescription, Dataset, PredictionRecord, AssessorPredictionRecord
+from assessors.cli.shared import CommandArguments, get_assessor_def
 from assessors.cli.cli import cli, CLIArgs
-from assessors.core.datasets import AssessorPredictionRecord
-from assessors.utils import dataset_extra as dse
-
-
-@dataclass
-class EvaluateBaseArgs(CommandArguments):
-    parent: CLIArgs = CLIArgs()
-    dataset: str = "mnist"
-    model: str = "default"
-
-    def validate(self):
-        self.parent.validate()
-        self.validate_option('dataset', ["mnist", "cifar10"])
-        self.validate_option('model', ["default"])
-
-
-@cli.command(name='eval-base')
-@click.argument('dataset')
-@click.option('-m', '--model', default='default', help="The model variant to train")
-@click.pass_context
-def evaluate_base(ctx, **kwargs):
-    args = EvaluateBaseArgs(parent=ctx.obj, **kwargs).validated()
-    dataset = TFDatasetWrapper(args.dataset)
-    (_train, test) = itemgetter('train', 'test')(dataset.load())
-
-    model_path = Path(f"artifacts/models/mnist/base")
-    model_def: ModelDefinition = get_model_def(args.dataset, args.model)()
-    model = model_def.try_restore_from(model_path)
-
-    model.evaluate(test)
-
-# ---------------------------------------------------------------------
 
 
 @dataclass
@@ -80,13 +44,11 @@ def evaluate_assessor(ctx, **kwargs):
     [dataset_name, model_name] = args.model.split('_')
     model_def: ModelDefinition = get_assessor_def(dataset_name, model_name)()
     model_path = Path(f"artifacts/models/{dataset_name}/{model_name}/assessor/")
-    model = model_def.try_restore_from(model_path)
-    if model is None:
-        raise click.UsageError(f"Could not load model {args.model} at {model_path}")
+    model = model_def.restore_from(model_path)
 
     # Load & mangle dataset
-    _dataset: TFDataset[PredictionRecord] = CustomDataset(path=args.dataset).load_all()
-    (_train, test) = dse.split_absolute(_dataset, -args.test_size)
+    _ds: Dataset[PredictionRecord, Any] = CustomDatasetDescription(path=args.dataset).load_all()
+    (_train, test) = _ds.split_absolute(-args.test_size)
 
     def to_supervised(record: PredictionRecord):
         return (record['inst_features'], record['syst_pred_score'])

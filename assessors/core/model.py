@@ -19,6 +19,12 @@ class ModelDefinition(ABC):
     def try_restore_from(self, path: Path) -> Optional[TrainedModel]:
         pass
 
+    def restore_from(self, path: Path) -> TrainedModel:
+        model = self.try_restore_from(path)
+        if model is None:
+            raise ValueError(f'Model not found at {path}')
+        return model
+
     @abstractmethod
     def score(self, y_true, y_pred):
         pass

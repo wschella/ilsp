@@ -39,8 +39,12 @@ jpt  = { shell = "jupyter lab --no-browser --port=8888" }
 run  = { script = "assessors.main:run" }
 test = { shell = "pytest --pyargs assessors" }
 gpu  = { shell = "python scripts/gpu_test.py" }
+type = { shell = "mypy assessors" }
 
 [tool.pytest.ini_options]
 filterwarnings = [
   'ignore:the imp module is deprecated:DeprecationWarning', # Thrown by TF 2.6, check on update
 ]
+
+[tool.mypy]
+ignore_missing_imports = true

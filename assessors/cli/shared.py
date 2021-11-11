@@ -1,8 +1,9 @@
 from typing import *
 from abc import ABC, abstractmethod
+from assessors.core.dataset import DatasetDescription
 
 import assessors.models as models
-from assessors.core import ModelDefinition
+from assessors.core import ModelDefinition, TFDatasetDescription
 
 
 def get_model_def(dataset, model_name) -> type[ModelDefinition]:
@@ -23,6 +24,13 @@ def get_assessor_def(dataset, model_name) -> type[ModelDefinition]:
         }
     }[dataset][model_name]
     return model
+
+
+def get_dataset_description(dataset) -> DatasetDescription:
+    return {
+        'mnist': TFDatasetDescription('mnist'),
+        'cifar10': TFDatasetDescription('cifar10'),
+    }[dataset]
 
 
 class CommandArguments(ABC):
