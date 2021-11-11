@@ -106,7 +106,9 @@ def evaluate_assessor(ctx, **kwargs):
             record.pop('inst_features')
 
             record: AssessorPredictionRecord = record
-            record["asss_prediction"] = asss_pred
+            record['syst_prediction'] = record['syst_prediction'].tolist()
+            record['syst_pred_score'] = record['syst_pred_score'][0]
+            record["asss_prediction"] = asss_pred.tolist()
             record["asss_pred_loss"] = int(model.loss(record['syst_pred_score'], asss_pred))
             writer.writerow(record)
     print(f"Wrote results to {args.output_path}")

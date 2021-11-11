@@ -48,4 +48,4 @@ def end2end(ctx, **kwargs):
     dataset_path = dataset_make.artifact_location(args.dataset, args.base_model, args.folds)
 
     ctx.invoke(train_assessor, dataset=dataset_path, model=args.assessor_model, restore="off")
-    ctx.invoke(evaluate_assessor, dataset=dataset_path, model=args.assessor_model)
+    ctx.invoke(evaluate_assessor, dataset=dataset_path, model=args.assessor_model, overwrite=True)
