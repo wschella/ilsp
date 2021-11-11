@@ -18,7 +18,7 @@ from assessors.cli.cli import cli, CLIArgs
 @dataclass
 class TrainArgs(CommandArguments):
     parent: CLIArgs = CLIArgs()
-    restore: str = "full"
+    restore: Restore.Options = "off"
 
     def validate(self):
         self.parent.validate()

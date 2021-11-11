@@ -14,7 +14,7 @@ def normalize_img(image, label):
 
 
 class MNISTDefault(TFModelDefinition):
-    epochs: int = 10
+    epochs: int = 5
 
     def name(self) -> str:
         return "mnist_default"

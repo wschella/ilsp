@@ -21,7 +21,7 @@ class CIFAR10Default(TFModelDefinition):
     epochs: int = 10
 
     def name(self) -> str:
-        return "mnist_default"
+        return "cifar10_default"
 
     def definition(self, compiled: bool = True):
         definition = wide_resnet(

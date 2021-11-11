@@ -53,6 +53,7 @@ class TrainedModel(ABC):
 class Restore:
     path: Path
     option: Union[Literal["full"], Literal["checkpoint"], Literal["off"]] = "off"
+    Options = Union[Literal["full"], Literal["checkpoint"], Literal["off"]]
 
     @staticmethod
     def FROM_SCRATCH(save_path: Path) -> Restore:

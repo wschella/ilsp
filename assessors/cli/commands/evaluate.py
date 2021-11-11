@@ -65,7 +65,7 @@ class EvaluateAssessorArgs(CommandArguments):
 
 @cli.command(name='eval-assessor')
 @click.argument('dataset', type=click.Path(exists=True, file_okay=False))
-@click.option('-o', '--output-path', default="./results.csv", help="The output path")
+@click.option('-o', '--output-path', default="./results.csv", type=click.Path(), help="The output path")
 @click.option('-t', '--test-size', default=10000, help="The test set size")
 @click.option('--overwrite', is_flag=True, help="Overwrite the output file if it exists", default=False)
 @click.option('-m', '--model', default='mnist_default', help="The model to evaluate")
@@ -92,7 +92,7 @@ def evaluate_assessor(ctx, **kwargs):
         return (record['inst_features'], record['syst_pred_score'])
 
     # Evaluate and log
-    os.makedirs(os.path.dirname(args.output_path), exist_ok=True)
+    os.makedirs(os.path.dirname(args.output_path.resolve()), exist_ok=True)
     with open(args.output_path, "w") as f:
         fieldnames = list(AssessorPredictionRecord.__annotations__.keys())
         writer = csv.DictWriter(f, fieldnames=fieldnames)
