@@ -74,6 +74,7 @@ class TrainKFoldArgs(TrainArgs):
     folds: int = 5
     dataset: str = "mnist"
     model: str = "default"
+    save: bool = True
 
     def validate(self):
         super().validate()
@@ -86,6 +87,7 @@ class TrainKFoldArgs(TrainArgs):
 @click.option('-f', '--folds', default=5, help="The number of folds")
 @click.option('-m', '--model', default='default', help="The model variant to train")
 @click.option("-r", "--restore", default="full", show_default=True, help="Wether to restore the model if possible. Options [full, checkpoint, off]")
+@click.option("--save/--no-save", default=True, show_default=True, help="Wether to save the model")
 @click.pass_context
 def train_kfold(ctx, **kwargs):
     """
@@ -99,7 +101,8 @@ def train_kfold(ctx, **kwargs):
     for i, (train, test) in enumerate(dse.k_folds(dataset, args.folds)):
         path = Path(f"artifacts/models/{args.dataset}/{args.model}/kfold_{args.folds}/{i}")
         model = model_def.train(train, validation=test, restore=Restore(path, args.restore))
-        model.save(path)
+        if args.save:
+            model.save(path)
 
 
 # -----------------------------------------------------------------------------
@@ -109,10 +112,11 @@ class TrainAssessorArgs(TrainArgs):
     dataset: Path = Path("artifacts/datasets/mnist/kfold/")
     test_size: int = 10000
     model: str = "mnist_default"
+    save: bool = True
 
     def validate(self):
         super().validate()
-        self.validate_option('model', ["mnist_default", "mnist_prob"])
+        self.validate_option('model', ["mnist_default", "mnist_prob", "cifar10_default"])
 
 
 @cli.command(name='train-assessor')
@@ -120,6 +124,7 @@ class TrainAssessorArgs(TrainArgs):
 @click.option('-s', '--test-size', default=10000, help="The size of the test split.")
 @click.option('-m', '--model', default='mnist_default', help="The model variant to train.")
 @click.option("-r", "--restore", default="full", show_default=True, help="Wether to restore the model if possible. Options [full, checkpoint, off]")
+@click.option("--save/--no-save", default=True, show_default=True, help="Wether to save the model")
 @click.pass_context
 def train_assessor(ctx, **kwargs):
     """
@@ -141,4 +146,5 @@ def train_assessor(ctx, **kwargs):
 
     (train, test) = dse.split_absolute(dataset, -args.test_size)
     model = model_def.train(train, validation=test, restore=Restore(path, args.restore))
-    model.save(path)
+    if args.save:
+        model.save(path)

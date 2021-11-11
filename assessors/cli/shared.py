@@ -17,9 +17,10 @@ def get_assessor_def(dataset, model_name) -> type[ModelDefinition]:
     model: type[ModelDefinition] = {  # type: ignore
         'mnist': {
             "default": models.MNISTAssessorProbabilistic,
-            "prob": models.MNISTAssessorProbabilistic,
+        },
+        'cifar10': {
+            "default": models.CIFAR10AssessorProbabilisticDefault,
         }
-        # 'cifar10': models.CIFAR10Default,
     }[dataset][model_name]
     return model
 

@@ -2,10 +2,6 @@ from __future__ import annotations
 from typing import *
 from abc import ABC, abstractmethod
 from pathlib import Path
-import csv
-import itertools
-
-from tqdm import tqdm
 
 import tensorflow as tf
 from tensorflow.python.data.ops.dataset_ops import Dataset as TFDataset
@@ -35,6 +31,9 @@ class TFModelDefinition(ModelDefinition, ABC):
         raise NotImplementedError()
 
     def train(self, dataset, validation, restore: Restore) -> TrainedModel:
+        return self._train(dataset, validation, restore)
+
+    def _train(self, dataset, validation, restore: Restore, **kwargs) -> TrainedModel:
         restore.log(self.name())
 
         # Try first to restore an entire saved model
@@ -49,7 +48,7 @@ class TFModelDefinition(ModelDefinition, ABC):
         ckpt_manager = tf.train.CheckpointManager(ckpt, dir, max_to_keep=1)
 
         if restore.should_restore_checkpoint():
-            if latest := ckpt_manager.latest_checkpoint is not None:
+            if (latest := ckpt_manager.latest_checkpoint) is not None:
                 # We add .expect_partial(), because if a previous run completed,
                 # and we consequently restore from the last checkpoint, no further
                 # training is need, and we don't expect to use all variables.
@@ -64,6 +63,7 @@ class TFModelDefinition(ModelDefinition, ABC):
             epochs=self.epochs,
             validation_data=self.test_pipeline(validation),
             initial_epoch=int(epoch),
+            **kwargs,
             callbacks=[callbacks.EpochCheckpointManagerCallback(ckpt_manager, epoch)]
         )
 

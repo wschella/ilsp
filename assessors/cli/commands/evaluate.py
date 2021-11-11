@@ -60,7 +60,7 @@ class EvaluateAssessorArgs(CommandArguments):
 
     def validate(self):
         self.parent.validate()
-        self.validate_option('model', ["mnist_default", "mnist_prob"])
+        self.validate_option('model', ["mnist_default", "mnist_prob", "cifar10_default"])
 
 
 @cli.command(name='eval-assessor')

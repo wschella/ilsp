@@ -1,2 +1,2 @@
 from assessors.models.mnist import MNISTDefault, MNISTAssessorProbabilistic
-from assessors.models.cifar10 import CIFAR10Default
+from assessors.models.cifar10 import CIFAR10Default, CIFAR10Wide, CIFAR10AssessorProbabilisticDefault, CIFAR10AssessorProbabilisticWide

@@ -36,7 +36,7 @@ class MNISTDefault(TFModelDefinition):
         return model
 
     def score(self, y_true, prediction):
-        return int(tf.math.argmax(prediction, axis=1) == y_true)
+        return float(tf.math.argmax(prediction, axis=1) == y_true)
 
     def train_pipeline(self, ds: TFDataset) -> TFDataset:
         return ds.map(normalize_img, num_parallel_calls=tf.data.experimental.AUTOTUNE)\

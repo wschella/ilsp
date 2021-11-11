@@ -19,6 +19,7 @@ class End2EndArgs(CommandArguments):
     dataset: str = "mnist"
     base_model: str = "default"
     restore: Restore.Options = "off"
+    save: bool = True
     assessor_model: str = "mnist_default"
     output_path: Path = Path("results.csv")
     folds: int = 5
@@ -27,7 +28,7 @@ class End2EndArgs(CommandArguments):
         self.parent.validate()
         self.validate_option('dataset', ["mnist", "cifar10"])
         self.validate_option('base_model', ["default"])
-        self.validate_option('assessor_model', ["mnist_default", "mnist_prob"])
+        self.validate_option('assessor_model', ["mnist_default", "mnist_prob", "cifar10_default"])
 
 
 @cli.command()
@@ -37,6 +38,7 @@ class End2EndArgs(CommandArguments):
 @click.option('-f', '--folds', default=5, help="The number of folds to use for cross-validation")
 @click.option('-o', '--output-path', default=Path('results.csv'), type=click.Path(), help="The file to write the results to")
 @click.option('-r', '--restore', default='off', help="Whether to restore models. Options [full, checkpoint, off]")
+@click.option('--save/--no-save', default=True, help="Whether to save models")
 @click.pass_context
 def end2end(ctx, **kwargs):
     """
@@ -57,7 +59,8 @@ def end2end(ctx, **kwargs):
         dataset=args.dataset,
         model=args.base_model,
         folds=args.folds,
-        restore=args.restore
+        restore=args.restore,
+        save=args.save
     )
 
     # Make assessor dataset
@@ -75,7 +78,8 @@ def end2end(ctx, **kwargs):
         train_assessor,
         dataset=dataset_path,
         model=args.assessor_model,
-        restore=args.restore)
+        restore=args.restore,
+        save=args.save)
 
     # Evaluate assessor
     print("# Evaluating assessor")
