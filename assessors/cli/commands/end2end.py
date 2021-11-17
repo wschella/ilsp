@@ -18,17 +18,21 @@ class End2EndArgs(CommandArguments):
     parent: CLIArgs = CLIArgs()
     dataset: str = "mnist"
     base_model: str = "default"
-    restore: Restore.Options = "off"
+    restore_systems: Restore.Options = "off"
+    restore_assessor: Restore.Options = "off"
+    test_size: int = 10000
     save: bool = True
+    download: bool = True
     assessor_model: str = "mnist_default"
     output_path: Path = Path("results.csv")
     folds: int = 5
 
     def validate(self):
         self.parent.validate()
-        self.validate_option('dataset', ["mnist", "cifar10"])
+        self.validate_option('dataset', ["mnist", "cifar10", "segment"])
         self.validate_option('base_model', ["default"])
-        self.validate_option('assessor_model', ["mnist_default", "mnist_prob", "cifar10_default"])
+        self.validate_option('assessor_model', [
+                             "mnist_default", "mnist_prob", "cifar10_default", "segment_default"])
 
 
 @cli.command()
@@ -36,9 +40,12 @@ class End2EndArgs(CommandArguments):
 @click.option('-b', '--base-model', default='default', help="The base model variant to train")
 @click.option('-a', '--assessor-model', default='mnist_default', help="The assessor model variant to train")
 @click.option('-f', '--folds', default=5, help="The number of folds to use for cross-validation")
-@click.option('-o', '--output-path', default=Path('results.csv'), type=click.Path(), help="The file to write the results to")
-@click.option('-r', '--restore', default='off', help="Whether to restore models. Options [full, checkpoint, off]")
+@click.option('-o', '--output-path', default=Path('results.csv'), type=click.Path(path_type=Path), help="The file to write the results to")
+@click.option('--restore-systems', default='off', help="Whether to restore base systems. Options [full, checkpoint, off]")
+@click.option('--restore-assessor', default='off', help="Whether to restore assessor model. Options [full, checkpoint, off]")
+@click.option('-s', '--test-size', default=10000, help="The number of test samples to use for testing the assessor")
 @click.option('--save/--no-save', default=True, help="Whether to save models")
+@click.option('--download/--no-download', default=True, help="Whether to download datasets")
 @click.pass_context
 def end2end(ctx, **kwargs):
     """
@@ -50,7 +57,8 @@ def end2end(ctx, **kwargs):
     args = End2EndArgs(parent=ctx.obj, **kwargs).validated()
 
     # Download and prepare relevant dataset
-    ctx.invoke(dataset_download, name=args.dataset)
+    if args.download:
+        ctx.invoke(dataset_download, name=args.dataset)
 
     # Train base population
     print("# Training base population")
@@ -59,7 +67,7 @@ def end2end(ctx, **kwargs):
         dataset=args.dataset,
         model=args.base_model,
         folds=args.folds,
-        restore=args.restore,
+        restore=args.restore_systems,
         save=args.save
     )
 
@@ -78,7 +86,8 @@ def end2end(ctx, **kwargs):
         train_assessor,
         dataset=dataset_path,
         model=args.assessor_model,
-        restore=args.restore,
+        restore=args.restore_assessor,
+        test_size=args.test_size,
         save=args.save)
 
     # Evaluate assessor
@@ -89,4 +98,5 @@ def end2end(ctx, **kwargs):
         dataset=dataset_path,
         model=args.assessor_model,
         output_path=args.output_path,
+        test_size=args.test_size,
         overwrite=True)

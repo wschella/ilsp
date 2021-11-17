@@ -6,7 +6,7 @@ from pathlib import Path
 import tensorflow as tf
 from tensorflow.keras.models import Model as KerasModel
 
-import assessors.utils.callbacks_extra as callbacks
+import assessors.utils.callbacks_extra as cbe
 from assessors.core import ModelDefinition, Restore, TrainedModel
 from assessors.core.dataset_tensorflow import TFDataset
 
@@ -63,8 +63,12 @@ class TFModelDefinition(ModelDefinition, ABC):
             epochs=self.epochs,
             validation_data=self.test_pipeline(validation),
             initial_epoch=int(epoch),
+            verbose=0,
+            callbacks=[
+                cbe.EpochCheckpointManagerCallback(ckpt_manager, epoch),
+                cbe.EpochMetricLogger(total_epochs=self.epochs, metric="val_accuracy"),
+            ],
             **kwargs,
-            callbacks=[callbacks.EpochCheckpointManagerCallback(ckpt_manager, epoch)]
         )
 
         return TrainedTFModel(model, self)
@@ -107,6 +111,10 @@ class TrainedTFModel(TrainedModel):
         self.model.save(str(path))
 
     def predict(self, entry, **kwargs):
+        # TODO
+        # raise NotImplementedError(
+        # "We need to add preprocessing steps here first, e.g. img normalize and expand dims")
+        # Expand dims can be general for all of TF?
         return self.model(entry, **kwargs)
 
     def predict_all(self, dataset: TFDataset, **kwargs):

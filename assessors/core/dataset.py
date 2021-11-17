@@ -3,6 +3,8 @@ from abc import ABC, abstractmethod
 from typing import *
 from pathlib import Path
 
+import numpy as np
+
 E = TypeVar('E', covariant=True)
 M = TypeVar('M', covariant=True)
 SELF = TypeVar('SELF', bound='Dataset')
@@ -92,6 +94,20 @@ class Dataset(Generic[E, SELF], ABC, Iterable[E], Sized):
     def concat(self, other: SELF) -> Dataset[E, SELF]:
         """
         Concatenate two datasets.
+        """
+        pass
+
+    @abstractmethod
+    def as_numpy(self) -> np.ndarray:
+        """
+        Convert the dataset to a numpy array.
+        """
+        pass
+
+    @abstractmethod
+    def shuffle(self) -> Dataset[E, SELF]:
+        """
+        Shuffle the dataset.
         """
         pass
 

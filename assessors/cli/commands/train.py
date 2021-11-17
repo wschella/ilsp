@@ -74,7 +74,7 @@ class TrainKFoldArgs(TrainArgs):
 
     def validate(self):
         super().validate()
-        self.validate_option('dataset', ["mnist", "cifar10"])
+        self.validate_option('dataset', ["mnist", "cifar10", "segment"])
         self.validate_option('model', ["default"])
 
 
@@ -114,11 +114,12 @@ class TrainAssessorArgs(TrainArgs):
 
     def validate(self):
         super().validate()
-        self.validate_option('model', ["mnist_default", "mnist_prob", "cifar10_default"])
+        self.validate_option('model', ["mnist_default", "mnist_prob",
+                             "cifar10_default", "segment_default"])
 
 
 @cli.command(name='train-assessor')
-@click.argument('dataset', type=click.Path(exists=True))
+@click.argument('dataset', type=click.Path(exists=True, path_type=Path))
 @click.option('-s', '--test-size', default=10000, help="The size of the test split.")
 @click.option('-m', '--model', default='mnist_default', help="The model variant to train.")
 @click.option("-r", "--restore", default="full", show_default=True, help="Wether to restore the model if possible. Options [full, checkpoint, off]")

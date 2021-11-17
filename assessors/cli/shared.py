@@ -1,15 +1,15 @@
 from typing import *
 from abc import ABC, abstractmethod
-from assessors.core.dataset import DatasetDescription
 
 import assessors.models as models
-from assessors.core import ModelDefinition, TFDatasetDescription
+from assessors.core import ModelDefinition, TFDatasetDescription, DatasetDescription, CSVDatasetDescription
 
 
 def get_model_def(dataset, model_name) -> type[ModelDefinition]:
     model: type[ModelDefinition] = {  # type: ignore
         'mnist': models.MNISTDefault,
         'cifar10': models.CIFAR10Default,
+        'segment': models.SegmentDefault,
     }[dataset]
     return model
 
@@ -21,6 +21,9 @@ def get_assessor_def(dataset, model_name) -> type[ModelDefinition]:
         },
         'cifar10': {
             "default": models.CIFAR10AssessorProbabilisticDefault,
+        },
+        'segment': {
+            "default": models.SegmentAssessorDefault,
         }
     }[dataset][model_name]
     return model
@@ -30,6 +33,7 @@ def get_dataset_description(dataset) -> DatasetDescription:
     return {
         'mnist': TFDatasetDescription('mnist'),
         'cifar10': TFDatasetDescription('cifar10'),
+        'segment': CSVDatasetDescription('segment_brodley.csv'),
     }[dataset]
 
 

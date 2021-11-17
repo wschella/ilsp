@@ -3,6 +3,8 @@ from typing import *
 from pathlib import Path
 from operator import itemgetter
 
+import numpy as np
+import pandas as pd
 import tensorflow as tf
 import tensorflow_datasets as tfds
 from tensorflow_datasets import ReadConfig
@@ -23,7 +25,7 @@ class TFDatasetDescription(DatasetDescription[E, 'TFDataset']):
     def download(self, dest: Path = None) -> None:
         return super().download(dest=dest)
 
-    def load(self, as_supervised: bool = True) -> Dict[str, TFDataset[E]]:
+    def load(self) -> Dict[str, TFDataset[E]]:
         return self._load(None)
 
     def _load(self, split) -> Dict[str, TFDataset[E]]:
@@ -47,6 +49,34 @@ class TFDatasetDescription(DatasetDescription[E, 'TFDataset']):
         return train.concat(test)
 
 
+class CSVDatasetDescription(DatasetDescription[E, 'TFDataset']):
+    name: str
+
+    def __init__(self, name: str):
+        self.name = name
+
+    def download(self, dest: Path = None) -> None:
+        raise NotImplementedError("This should be downloaded manually")
+
+    def load(self) -> Dict[str, TFDataset[E]]:
+        return self._load(None)
+
+    def _load(self, split) -> Dict[str, TFDataset[E]]:
+        path = Path("./datasets/") / self.name
+        pdds = pd.read_csv(path)
+        pdds['class'] = pd.Categorical(pdds['class']).codes  # type: ignore
+        target = pdds.pop('class')
+        ds = tf.data.Dataset.from_tensor_slices((pdds.values, target.values))
+        # ds = tf.data.experimental.make_csv_dataset(str(path), batch_size=32, label_name="class")
+        return {'all': TFDataset(ds)}
+
+    def split(self, name: str) -> TFDataset[E]:
+        return self._load(name)[name]
+
+    def load_all(self) -> TFDataset[E]:
+        return self.load()['all']
+
+
 class TFDataset(Dataset[E, 'TFDataset']):
     ds: tf.data.Dataset
 
@@ -60,7 +90,7 @@ class TFDataset(Dataset[E, 'TFDataset']):
         return len(self.ds)
 
     def __next__(self):
-        return self.ds.__next__()
+        return self.ds.__next__()  # type: ignore
 
     def save(self, dest: Path) -> None:
         return tf.data.experimental.save(self.ds, str(dest))
@@ -70,6 +100,9 @@ class TFDataset(Dataset[E, 'TFDataset']):
 
     def concat(self, other: TFDataset[E]) -> Dataset[E, TFDataset]:
         return TFDataset(self.ds.concatenate(other.ds))
+
+    def shuffle(self, buffer_size: int = None, seed: int = None) -> Dataset[E, TFDataset]:
+        return TFDataset(self.ds.shuffle(buffer_size, seed))
 
     def enumerate_dict(self) -> Dataset[E, TFDataset]:
         return TFDataset(dsetf.enumerate_dict(self.ds))
@@ -87,6 +120,9 @@ class TFDataset(Dataset[E, 'TFDataset']):
 
     def skip(self, n: int) -> Dataset[E, TFDataset]:
         return TFDataset(self.ds.skip(n))
+
+    def as_numpy(self) -> np.ndarray:
+        return tfds.as_dataframe(self.ds).to_numpy()
 
     def split_absolute(self, split_at: int) -> Tuple[Dataset[E, TFDataset], Dataset[E, TFDataset]]:
         ds1, ds2 = dsetf.split_absolute(self.ds, split_at)

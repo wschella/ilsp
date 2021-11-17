@@ -45,7 +45,7 @@ class MakeKFoldArgs(CommandArguments):
 
     def validate(self):
         self.parent.validate()
-        self.validate_option('dataset', ["mnist", "cifar10"])
+        self.validate_option('dataset', ["mnist", "cifar10", "segment"])
         self.validate_option('model', ["default"])
 
 
@@ -84,8 +84,11 @@ def dataset_make(ctx, **kwargs):
         models.append(model)
 
         def to_prediction_record(entry) -> PredictionRecord:
-            x, y_true = normalize_img(entry['x'], entry['y'])
-            y_pred = model(x.reshape((1) + x.shape))
+            x, y_true = entry['x'], entry['y']
+            # TODO: Remove
+            # y_pred = model(x.reshape((1) + x.shape))
+            y_pred = model(tf.expand_dims(x, axis=0))
+            # y_pred = model(x)
             return {
                 'inst_index': entry['index'],
                 'inst_features': entry['x'],
@@ -109,8 +112,3 @@ def dataset_make(ctx, **kwargs):
 # Add an attribute to the function / command that tells where it will store the artifact
 cast(Any, dataset_make).artifact_location = lambda dataset, model, n_folds: Path(
     f"artifacts/datasets/{dataset}/{model}/kfold_{n_folds}/")
-
-
-def normalize_img(image, label):
-    """Normalizes images: `uint8` -> `float32`."""
-    return tf.cast(image, tf.float32) / 255., label  # type: ignore

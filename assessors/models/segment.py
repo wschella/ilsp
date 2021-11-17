@@ -1,0 +1,66 @@
+from __future__ import annotations
+from typing import *
+
+import tensorflow as tf
+import tensorflow.keras as keras
+from tensorflow.python.data.ops.dataset_ops import Dataset as TFDataset
+
+from assessors.core import TFModelDefinition
+
+
+class SegmentDefault(TFModelDefinition):
+    epochs: int = 20
+
+    def name(self) -> str:
+        return "segment_default"
+
+    @staticmethod
+    def definition():
+        model = keras.models.Sequential([
+            keras.layers.Dense(20, activation='relu'),
+            keras.layers.Dense(10, activation='relu'),
+            keras.layers.Dense(7, activation='softmax'),
+        ])
+
+        model.compile(
+            # optimizer=keras.optimizers.Adam(0.001),
+            loss=keras.losses.SparseCategoricalCrossentropy(),
+            metrics=[keras.metrics.SparseCategoricalAccuracy(name='accuracy')],
+        )
+
+        return model
+
+    def score(self, y_true, prediction):
+        return float(tf.math.argmax(prediction, axis=1) == y_true)
+
+    def train_pipeline(self, ds: TFDataset) -> TFDataset:
+        return ds.cache()\
+            .shuffle(10000)\
+            .batch(64)\
+            .prefetch(tf.data.experimental.AUTOTUNE)
+
+    def test_pipeline(self, ds: TFDataset) -> TFDataset:
+        return ds.cache()\
+            .batch(32)\
+            .prefetch(tf.data.experimental.AUTOTUNE)
+
+
+class SegmentAssessorDefault(SegmentDefault):
+    def name(self) -> str:
+        return "segment_assessor_default"
+
+    @staticmethod
+    def definition():
+        model = keras.models.Sequential([
+            keras.layers.Dense(20, activation='relu'),
+            keras.layers.Dense(10, activation='relu'),
+            keras.layers.Dense(1, activation='sigmoid'),
+        ])
+
+        model.compile(
+            # optimizer=keras.optimizers.Adam(0.001),
+            loss=keras.losses.BinaryCrossentropy(),
+            metrics=[keras.metrics.BinaryAccuracy(name='accuracy')],
+        )
+
+        return model

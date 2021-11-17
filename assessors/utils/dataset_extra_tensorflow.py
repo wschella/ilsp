@@ -64,6 +64,7 @@ def split_absolute(ds: tf.data.Dataset, count: int) -> Tuple[tf.data.Dataset, tf
     the rest for the other dataset.
     If :count: is negative, we take len(ds) - :count: items instead.
     """
+    assert abs(count) <= len(ds), "Can't split Dataset by more elements than it has"
     if count < 0:
         count = ds.cardinality() + count
     return (ds.take(count), ds.skip(count))

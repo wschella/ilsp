@@ -5,6 +5,22 @@ from tensorflow.python.training.checkpoint_management import CheckpointManager
 from tensorflow.python.keras.callbacks import Callback
 
 
+class EpochMetricLogger(Callback):
+    total_epochs: int
+    metric: Optional[str] = None
+
+    def __init__(self, total_epochs: int, metric: Optional[str] = None):
+        self.total_epochs = total_epochs
+        self.metric = metric
+
+    def on_epoch_end(self, epoch, logs=None):
+        logs = logs or {}
+        if self.metric is not None:
+            print(f"Epoch {epoch + 1}/{self.total_epochs}: {self.metric}={logs[self.metric]}")
+        else:
+            print(f"Epoch {epoch + 1}/{self.total_epochs}: {logs}")
+
+
 class EpochCheckpointManagerCallback(Callback):
     """
     This allows using the TF Checkpoint & CheckpointManager API in model.fit()
