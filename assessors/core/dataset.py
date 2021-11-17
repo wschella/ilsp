@@ -130,7 +130,7 @@ class Dataset(Generic[E, SELF], ABC, Iterable[E], Sized):
         pass
 
     @abstractmethod
-    def as_numpy_iterator(self) -> Iterator[E]:
+    def as_numpy_sequence(self) -> Sequence[E]:
         pass
 
     @abstractmethod

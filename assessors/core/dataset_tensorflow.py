@@ -95,8 +95,8 @@ class TFDataset(Dataset[E, 'TFDataset']):
     def save(self, dest: Path) -> None:
         return tf.data.experimental.save(self.ds, str(dest))
 
-    def as_numpy_iterator(self) -> Iterator[E]:
-        return self.ds.as_numpy_iterator()
+    def as_numpy_sequence(self) -> Sequence[E]:
+        return self.ds.as_numpy_iterator()  # type: ignore
 
     def concat(self, other: TFDataset[E]) -> Dataset[E, TFDataset]:
         return TFDataset(self.ds.concatenate(other.ds))

@@ -137,13 +137,13 @@ def train_assessor(ctx, **kwargs):
     def to_supervised(record: PredictionRecord):
         return (record['inst_features'], record['syst_pred_score'])
 
-    dataset: Dataset = CustomDatasetDescription(path=args.dataset) \
-        .load_all() \
-        .map(to_supervised)
+    _dataset: Dataset[PredictionRecord, Any] = CustomDatasetDescription(
+        path=args.dataset).load_all()
+    supervised = _dataset.map(to_supervised)
 
     path = Path(f"artifacts/models/{dataset_name}/{model_name}/assessor/")
 
-    (train, test) = dataset.split_absolute(-args.test_size)
+    (train, test) = supervised.split_absolute(-args.test_size)
     model = model_def.train(train, validation=test, restore=Restore(path, args.restore))
     if args.save:
         model.save(path)

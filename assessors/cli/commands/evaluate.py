@@ -11,7 +11,7 @@ import numpy as np
 import sklearn.metrics as metrics
 from tqdm import tqdm
 
-from assessors.core import ModelDefinition, CustomDatasetDescription, Dataset, PredictionRecord, AssessorPredictionRecord
+from assessors.core import ModelDefinition, CustomDatasetDescription, Dataset, PredictionRecord, TypedPredictionRecord, AssessorPredictionRecord
 from assessors.cli.shared import CommandArguments, get_assessor_def, get_dataset_description, get_model_def
 from assessors.cli.cli import cli, CLIArgs
 
@@ -69,12 +69,13 @@ def evaluate_assessor(ctx, **kwargs):
         writer.writeheader()
 
         asss_predictions = model.predict_all(test.map(to_supervised))
+        test_as_numpy: Sequence[TypedPredictionRecord] = test.as_numpy_sequence()
 
         print("Writing results. No idea yet why this is slow.")
-        for record, asss_pred in tqdm(zip(test.as_numpy_iterator(), asss_predictions), total=len(test)):
+        for record, asss_pred in tqdm(zip(test_as_numpy, asss_predictions), total=len(test)):
             asss_record = AssessorPredictionRecord(
                 inst_index=record['inst_index'],
-                inst_label=record['inst_label'],
+                inst_target=record['inst_target'],
                 syst_features=record['syst_features'],
                 syst_prediction=record['syst_prediction'].tolist(),
                 syst_pred_score=record['syst_pred_score'],
@@ -124,7 +125,7 @@ def evaluate_system(ctx, **kwargs):
     # Load system
     model_def: ModelDefinition = get_model_def(args.dataset, args.model)()
     # TODO: Fix
-    model_path = Path(f"artifacts/models/{args.dataset}/{args.model}/kfold_5/5")
+    model_path = Path(f"artifacts/models/{args.dataset}/{args.model}/kfold_5/4")
     model = model_def.restore_from(model_path)
 
     # Load & mangle dataset

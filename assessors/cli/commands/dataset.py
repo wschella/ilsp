@@ -4,6 +4,7 @@ from pathlib import *
 
 import click
 
+import numpy as np
 import tensorflow as tf
 
 from assessors.core import ModelDefinition, PredictionRecord
@@ -63,7 +64,7 @@ def dataset_make(ctx, **kwargs):
     dataset_desc: DatasetDescription = get_dataset_description(args.dataset)
 
     dataset: Dataset = dataset_desc.load_all()
-    dataset = dataset.map(lambda e: {'x': e[0], 'y': e[1]}).enumerate_dict()
+    dataset = dataset.map(lambda e: {'features': e[0], 'target': e[1]}).enumerate_dict()
 
     models = []
     ds_parts = []
@@ -83,20 +84,20 @@ def dataset_make(ctx, **kwargs):
         models.append(model)
 
         def to_prediction_record(entry) -> PredictionRecord:
-            x, y_true = entry['x'], entry['y']
+            x, y_true = entry['features'], entry['target']
             # TODO: Remove
             # y_pred = model(x.reshape((1) + x.shape))
             y_pred = model(tf.expand_dims(x, axis=0))
             # y_pred = model(x)
-            return {
-                'inst_index': entry['index'],
-                'inst_features': entry['x'],
-                'inst_label': entry['y'],
-                'syst_features': i,
-                'syst_prediction': y_pred,
-                'syst_pred_loss': model.loss(y_true, y_pred),
-                'syst_pred_score': model.score(y_true, y_pred),
-            }
+            return PredictionRecord(
+                inst_index=entry['index'],
+                inst_features=entry['features'],
+                inst_target=entry['target'],
+                syst_features=np.ndarray([i]),
+                syst_prediction=y_pred,
+                syst_pred_loss=model.loss(y_true, y_pred),
+                syst_pred_score=model.score(y_true, y_pred),
+            )
 
         part = test.map(to_prediction_record)
         ds_parts.append(part)
