@@ -26,7 +26,7 @@ class ModelDefinition(ABC):
         return model
 
     @abstractmethod
-    def score(self, y_true, y_pred):
+    def score(self, y_true, y_pred) -> float:
         pass
 
 
@@ -36,19 +36,19 @@ class TrainedModel(ABC):
         pass
 
     @abstractmethod
-    def loss(self, y_true, y_pred):
+    def loss(self, y_true, y_pred) -> float:
         pass
 
     @abstractmethod
-    def score(self, y_true, y_pred):
+    def score(self, y_true, y_pred) -> float:
         pass
 
     @abstractmethod
-    def predict(self, entry, **kwargs):
+    def predict(self, entry, **kwargs) -> Any:
         pass
 
     @abstractmethod
-    def predict_all(self, dataset, **kwargs):
+    def predict_all(self, dataset, **kwargs) -> Sequence[Any]:
         pass
 
     def __call__(self, entry, **kwargs):

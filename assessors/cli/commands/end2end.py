@@ -78,7 +78,8 @@ def end2end(ctx, **kwargs):
         dataset=args.dataset,
         model=args.base_model,
         folds=args.folds)
-    dataset_path = dataset_make.artifact_location(args.dataset, args.base_model, args.folds)
+    dataset_path = dataset_make.artifact_location(  # type: ignore
+        args.dataset, args.base_model, args.folds)
 
     # Train assessor
     print("# Training assessor")

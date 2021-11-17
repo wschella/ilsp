@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 
 import tensorflow as tf
-from tensorflow.keras.models import Model as KerasModel
+import tensorflow.keras as keras
 
 import assessors.utils.callbacks_extra as cbe
 from assessors.core import ModelDefinition, Restore, TrainedModel
@@ -15,7 +15,7 @@ class TFModelDefinition(ModelDefinition, ABC):
     epochs: int = 10
 
     @abstractmethod
-    def definition(self) -> KerasModel:
+    def definition(self) -> keras.Model:
         raise NotImplementedError()
 
     @abstractmethod
@@ -41,7 +41,7 @@ class TFModelDefinition(ModelDefinition, ABC):
             return restored_model
 
         # Try now to restore from checkpoints
-        model: KerasModel = self.definition()
+        model: keras.Model = self.definition()
         epoch = tf.Variable(0)
         ckpt = tf.train.Checkpoint(model=model, optimizer=model.optimizer, epoch=epoch)
         dir = restore.path / "checkpoints"
@@ -79,7 +79,7 @@ class TFModelDefinition(ModelDefinition, ABC):
         else:
             return None
 
-    def __try_restore_from(self, path: Path) -> Optional[KerasModel]:
+    def __try_restore_from(self, path: Path) -> Optional[keras.Model]:
         try:
             model = tf.keras.models.load_model(path)
             print(f"Restored full model from {path}")
@@ -94,17 +94,17 @@ class TFModelDefinition(ModelDefinition, ABC):
 
 
 class TrainedTFModel(TrainedModel):
-    model: KerasModel
+    model: keras.Model
     definition: TFModelDefinition
 
-    def __init__(self, model: KerasModel, definition: TFModelDefinition):
+    def __init__(self, model: keras.Model, definition: TFModelDefinition):
         self.model = model
         self.definition = definition
 
     def loss(self, y_true, y_pred):
         return self.model.loss(y_true, y_pred)  # type: ignore
 
-    def score(self, y_true, y_pred):
+    def score(self, y_true, y_pred) -> float:
         return self.definition.score(y_true, y_pred)
 
     def save(self, path: Path):

@@ -18,7 +18,7 @@ class CIFAR10Model(ABC):
     shared by all.
     """
 
-    def score(self, y_true, prediction):
+    def score(self, y_true, prediction) -> float:
         return float(tf.math.argmax(prediction, axis=1) == y_true)
 
     def train_pipeline(self, ds: TFDataset) -> TFDataset:
@@ -35,7 +35,7 @@ class CIFAR10Model(ABC):
             .prefetch(tf.data.experimental.AUTOTUNE)
 
 
-class CIFAR10Default(CIFAR10Model, TFModelDefinition):
+class CIFAR10Default(TFModelDefinition, CIFAR10Model):
     epochs: int = 10
 
     def name(self) -> str:
@@ -144,4 +144,4 @@ class CIFAR10AssessorProbabilisticWide(CIFAR10Wide):
 
 def normalize_img(image, label):
     """Normalizes images: `uint8` -> `float32`."""
-    return tf.cast(image, tf.float32) / 255., label  # type: ignore
+    return tf.cast(image, tf.float32) / tf.float32(255.), label  # type: ignore

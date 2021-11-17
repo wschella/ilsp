@@ -28,7 +28,7 @@ class AssessorPredictionRecord(TypedDict):
     inst_index: Any
     inst_label: Any
     syst_features: Any
-    syst_prediction: Any
+    syst_prediction: Any  # Should be CSV safe (as opposed to for prediction record)
     syst_pred_loss: Any
     syst_pred_score: Any
     asss_prediction: Any

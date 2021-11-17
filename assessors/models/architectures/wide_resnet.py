@@ -16,9 +16,10 @@
 """Wide Residual Network."""
 
 import functools
-from typing import Dict, Iterable, Optional
+from typing import Dict, Iterable
 
 import tensorflow as tf
+import tensorflow.keras as keras
 
 HP_KEYS = ('bn_l2', 'input_conv_l2', 'group_1_conv_l2', 'group_2_conv_l2',
            'group_3_conv_l2', 'dense_kernel_l2', 'dense_bias_l2')
@@ -147,7 +148,7 @@ def wide_resnet(
         l2: float,
         version: int = 2,
         seed: int = 42,
-        hps: Dict[str, float] = {}) -> tf.keras.models.Model:
+        hps: Dict[str, float] = {}) -> keras.Model:
     """Builds Wide ResNet.
     Following Zagoruyko and Komodakis (2016), it accepts a width multiplier on the
     number of filters. Using three groups of residual blocks, the network maps

@@ -1,16 +1,16 @@
 from __future__ import annotations
+from abc import abstractmethod
 from typing import *
 
 import tensorflow as tf
 import tensorflow.keras as keras
-from tensorflow.python.data.ops.dataset_ops import Dataset as TFDataset
 
 from assessors.core import TFModelDefinition
 
 
 def normalize_img(image, label):
     """Normalizes images: `uint8` -> `float32`."""
-    return tf.cast(image, tf.float32) / 255., label
+    return tf.cast(image, tf.float32) / tf.float32(255.), label
 
 
 class MNISTDefault(TFModelDefinition):
@@ -19,8 +19,7 @@ class MNISTDefault(TFModelDefinition):
     def name(self) -> str:
         return "mnist_default"
 
-    @staticmethod
-    def definition():
+    def definition(self) -> keras.Model:
         model = keras.models.Sequential([
             keras.layers.Flatten(input_shape=(28, 28)),
             keras.layers.Dense(128, activation='relu'),
@@ -35,17 +34,17 @@ class MNISTDefault(TFModelDefinition):
 
         return model
 
-    def score(self, y_true, prediction):
-        return float(tf.math.argmax(prediction, axis=1) == y_true)
+    def score(self, y_true, y_pred) -> float:
+        return float(tf.math.argmax(y_pred, axis=1) == y_true)
 
-    def train_pipeline(self, ds: TFDataset) -> TFDataset:
+    def train_pipeline(self, ds: tf.data.Dataset) -> tf.data.Dataset:
         return ds.map(normalize_img, num_parallel_calls=tf.data.experimental.AUTOTUNE)\
             .cache()\
             .shuffle(1000)\
             .batch(128)\
             .prefetch(tf.data.experimental.AUTOTUNE)
 
-    def test_pipeline(self, ds: TFDataset) -> TFDataset:
+    def test_pipeline(self, ds: tf.data.Dataset) -> tf.data.Dataset:
         return ds.map(normalize_img, num_parallel_calls=tf.data.experimental.AUTOTUNE)\
             .cache()\
             .batch(256)\
@@ -55,8 +54,7 @@ class MNISTDefault(TFModelDefinition):
 class MNISTAssessorProbabilistic(MNISTDefault):
     epochs = 15
 
-    @staticmethod
-    def definition():
+    def definition(self) -> keras.Model:
         model = keras.models.Sequential([
             keras.layers.Flatten(input_shape=(28, 28)),
             keras.layers.Dense(128, activation='relu'),
@@ -71,5 +69,5 @@ class MNISTAssessorProbabilistic(MNISTDefault):
 
         return model
 
-    def score(self, y_true, prediction):
+    def score(self, y_true, y_pred) -> float:
         raise NotImplementedError()

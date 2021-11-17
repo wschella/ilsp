@@ -8,7 +8,6 @@ import tensorflow as tf
 
 from assessors.core import ModelDefinition, PredictionRecord
 from assessors.core import Dataset, DatasetDescription
-from assessors.core.model import TrainedModel
 from assessors.utils import dataset_extra as dse
 from assessors.cli.shared import CommandArguments, get_dataset_description, get_model_def
 from assessors.cli.cli import cli, CLIArgs

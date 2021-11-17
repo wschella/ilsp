@@ -72,15 +72,17 @@ def evaluate_assessor(ctx, **kwargs):
 
         print("Writing results. No idea yet why this is slow.")
         for record, asss_pred in tqdm(zip(test.as_numpy_iterator(), asss_predictions), total=len(test)):
-            record: PredictionRecord = record
-            record.pop('inst_features')
-
-            record: AssessorPredictionRecord = record
-            record['syst_prediction'] = record['syst_prediction'].tolist()
-            record['syst_pred_score'] = record['syst_pred_score'][0]
-            record["asss_prediction"] = asss_pred.tolist()
-            record["asss_pred_loss"] = int(model.loss(record['syst_pred_score'], asss_pred))
-            writer.writerow(record)
+            asss_record = AssessorPredictionRecord(
+                inst_index=record['inst_index'],
+                inst_label=record['inst_label'],
+                syst_features=record['syst_features'],
+                syst_prediction=record['syst_prediction'].tolist(),
+                syst_pred_score=record['syst_pred_score'],
+                syst_pred_loss=record['syst_pred_loss'],
+                asss_prediction=asss_pred.tolist(),
+                asss_pred_loss=int(model.loss(record['syst_pred_score'], asss_pred))
+            )
+            writer.writerow(asss_record)
     print(f"Wrote results to {args.output_path}")
 
     # Print some simple results

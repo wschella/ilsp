@@ -3,7 +3,6 @@ from typing import *
 
 import tensorflow as tf
 import tensorflow.keras as keras
-from tensorflow.python.data.ops.dataset_ops import Dataset as TFDataset
 
 from assessors.core import TFModelDefinition
 
@@ -14,8 +13,7 @@ class SegmentDefault(TFModelDefinition):
     def name(self) -> str:
         return "segment_default"
 
-    @staticmethod
-    def definition():
+    def definition(self) -> keras.Model:
         model = keras.models.Sequential([
             keras.layers.Dense(20, activation='relu'),
             keras.layers.Dense(10, activation='relu'),
@@ -30,16 +28,16 @@ class SegmentDefault(TFModelDefinition):
 
         return model
 
-    def score(self, y_true, prediction):
-        return float(tf.math.argmax(prediction, axis=1) == y_true)
+    def score(self, y_true, y_pred) -> float:
+        return float(tf.math.argmax(y_pred, axis=1) == y_true)
 
-    def train_pipeline(self, ds: TFDataset) -> TFDataset:
+    def train_pipeline(self, ds: tf.data.Dataset) -> tf.data.Dataset:
         return ds.cache()\
             .shuffle(10000)\
             .batch(64)\
             .prefetch(tf.data.experimental.AUTOTUNE)
 
-    def test_pipeline(self, ds: TFDataset) -> TFDataset:
+    def test_pipeline(self, ds: tf.data.Dataset) -> tf.data.Dataset:
         return ds.cache()\
             .batch(32)\
             .prefetch(tf.data.experimental.AUTOTUNE)
@@ -49,8 +47,7 @@ class SegmentAssessorDefault(SegmentDefault):
     def name(self) -> str:
         return "segment_assessor_default"
 
-    @staticmethod
-    def definition():
+    def definition(self) -> keras.Model:
         model = keras.models.Sequential([
             keras.layers.Dense(20, activation='relu'),
             keras.layers.Dense(10, activation='relu'),
