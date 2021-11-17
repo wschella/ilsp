@@ -5,6 +5,7 @@ import tensorflow as tf
 import tensorflow.keras as keras
 
 from assessors.core import TFModelDefinition
+import assessors.utils.callbacks_extra as cbe
 
 
 class SegmentDefault(TFModelDefinition):
@@ -28,8 +29,19 @@ class SegmentDefault(TFModelDefinition):
 
         return model
 
+    def preproces_input(self, entry) -> tf.Tensor:
+        return entry
+
     def score(self, y_true, y_pred) -> float:
-        return float(tf.math.argmax(y_pred, axis=1) == y_true)
+        return (tf.math.argmax(y_pred, axis=1) == y_true)[0]
+
+    def get_fit_kwargs(self, model, dataset, **kwargs) -> Dict:
+        return {
+            "verbose": 0,
+            "callbacks": [
+                cbe.EpochMetricLogger(total_epochs=self.epochs, metric="val_accuracy")
+            ]
+        }
 
     def train_pipeline(self, ds: tf.data.Dataset) -> tf.data.Dataset:
         return ds.cache()\

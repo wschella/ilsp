@@ -19,6 +19,10 @@ class TFModelDefinition(ModelDefinition, ABC):
         raise NotImplementedError()
 
     @abstractmethod
+    def preproces_input(self, entry) -> tf.Tensor:
+        raise NotImplementedError()
+
+    @abstractmethod
     def train_pipeline(self, ds: tf.data.Dataset) -> tf.data.Dataset:
         raise NotImplementedError()
 
@@ -29,6 +33,9 @@ class TFModelDefinition(ModelDefinition, ABC):
         and set the batch size as much as the hardware allows.
         """
         raise NotImplementedError()
+
+    def get_fit_kwargs(self, model: keras.Model, dataset: tf.data.Dataset, **kwargs) -> Dict:
+        return {}
 
     def train(self, dataset: TFDataset, validation: TFDataset, restore: Restore) -> TrainedModel:
         return self._train(dataset.ds, validation.ds, restore)
@@ -57,17 +64,21 @@ class TFModelDefinition(ModelDefinition, ABC):
             else:
                 print(f"Training from scratch for {dir}")
 
+        # Get subclass specific fit kwargs
+        train_ds = self.train_pipeline(dataset)
+        extra_kwargs = self.get_fit_kwargs(model, train_ds, **kwargs)
+        extra_callbacks = extra_kwargs.pop("callbacks", [])
+        kwargs = {**extra_kwargs, **kwargs}  # We prefer caller kwargs
+
         # Actually train
         model.fit(
-            self.train_pipeline(dataset),
+            train_ds,
             epochs=self.epochs,
             validation_data=self.test_pipeline(validation),
             initial_epoch=int(epoch),
-            verbose=0,
             callbacks=[
                 cbe.EpochCheckpointManagerCallback(ckpt_manager, epoch),
-                cbe.EpochMetricLogger(total_epochs=self.epochs, metric="val_accuracy"),
-            ],
+            ] + extra_callbacks,
             **kwargs,
         )
 
@@ -111,10 +122,8 @@ class TrainedTFModel(TrainedModel):
         self.model.save(str(path))
 
     def predict(self, entry, **kwargs):
-        # TODO
-        # raise NotImplementedError(
-        # "We need to add preprocessing steps here first, e.g. img normalize and expand dims")
-        # Expand dims can be general for all of TF?
+        entry = self.definition.preproces_input(entry)
+        entry = tf.expand_dims(entry, axis=0)
         return self.model(entry, **kwargs)
 
     def predict_all(self, dataset: TFDataset, **kwargs):

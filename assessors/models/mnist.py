@@ -1,5 +1,4 @@
 from __future__ import annotations
-from abc import abstractmethod
 from typing import *
 
 import tensorflow as tf
@@ -10,7 +9,7 @@ from assessors.core import TFModelDefinition
 
 def normalize_img(image, label):
     """Normalizes images: `uint8` -> `float32`."""
-    return tf.cast(image, tf.float32) / tf.float32(255.), label
+    return tf.cast(image, tf.float32) / 255.0, label  # type: ignore
 
 
 class MNISTDefault(TFModelDefinition):
@@ -29,13 +28,16 @@ class MNISTDefault(TFModelDefinition):
         model.compile(
             optimizer=keras.optimizers.Adam(0.001),
             loss=keras.losses.SparseCategoricalCrossentropy(),
-            metrics=[keras.metrics.SparseCategoricalAccuracy()],
+            metrics=[keras.metrics.SparseCategoricalAccuracy(name='acc')],
         )
 
         return model
 
+    def preproces_input(self, entry) -> tf.Tensor:
+        return normalize_img(entry, None)[0]
+
     def score(self, y_true, y_pred) -> float:
-        return float(tf.math.argmax(y_pred, axis=1) == y_true)
+        return (tf.math.argmax(y_pred, axis=1) == y_true)[0]
 
     def train_pipeline(self, ds: tf.data.Dataset) -> tf.data.Dataset:
         return ds.map(normalize_img, num_parallel_calls=tf.data.experimental.AUTOTUNE)\
@@ -64,7 +66,7 @@ class MNISTAssessorProbabilistic(MNISTDefault):
         model.compile(
             optimizer=keras.optimizers.Adam(0.001),
             loss=keras.losses.BinaryCrossentropy(),
-            metrics=[keras.metrics.BinaryAccuracy()],
+            metrics=[keras.metrics.BinaryAccuracy(name='acc')],
         )
 
         return model

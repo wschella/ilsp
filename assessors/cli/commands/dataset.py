@@ -4,9 +4,6 @@ from pathlib import *
 
 import click
 
-import numpy as np
-import tensorflow as tf
-
 from assessors.core import ModelDefinition, PredictionRecord
 from assessors.core import Dataset, DatasetDescription
 from assessors.utils import dataset_extra as dse
@@ -85,15 +82,12 @@ def dataset_make(ctx, **kwargs):
 
         def to_prediction_record(entry) -> PredictionRecord:
             x, y_true = entry['features'], entry['target']
-            # TODO: Remove
-            # y_pred = model(x.reshape((1) + x.shape))
-            y_pred = model(tf.expand_dims(x, axis=0))
-            # y_pred = model(x)
+            y_pred = model(x)
             return PredictionRecord(
                 inst_index=entry['index'],
                 inst_features=entry['features'],
                 inst_target=entry['target'],
-                syst_features=np.ndarray([i]),
+                syst_features=test.encode([i]),
                 syst_prediction=y_pred,
                 syst_pred_loss=model.loss(y_true, y_pred),
                 syst_pred_score=model.score(y_true, y_pred),
@@ -110,5 +104,6 @@ def dataset_make(ctx, **kwargs):
 
 
 # Add an attribute to the function / command that tells where it will store the artifact
-cast(Any, dataset_make).artifact_location = lambda dataset, model, n_folds: Path(
-    f"artifacts/datasets/{dataset}/{model}/kfold_{n_folds}/")
+cast(Any, dataset_make).artifact_location = \
+    lambda dataset, model, n_folds: \
+    Path(f"artifacts/datasets/{dataset}/{model}/kfold_{n_folds}/")

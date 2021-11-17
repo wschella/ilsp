@@ -43,7 +43,7 @@ class End2EndArgs(CommandArguments):
 @click.option('-o', '--output-path', default=Path('results.csv'), type=click.Path(path_type=Path), help="The file to write the results to")
 @click.option('--restore-systems', default='off', help="Whether to restore base systems. Options [full, checkpoint, off]")
 @click.option('--restore-assessor', default='off', help="Whether to restore assessor model. Options [full, checkpoint, off]")
-@click.option('-s', '--test-size', default=10000, help="The number of test samples to use for testing the assessor")
+@click.option('-t', '--test-size', default=10000, help="The number of test samples to use for testing the assessor")
 @click.option('--save/--no-save', default=True, help="Whether to save models")
 @click.option('--download/--no-download', default=True, help="Whether to download datasets")
 @click.pass_context

@@ -21,6 +21,9 @@ class CIFAR10Model(ABC):
     def score(self, y_true, prediction) -> float:
         return float(tf.math.argmax(prediction, axis=1) == y_true)
 
+    def preproces_input(self, entry) -> tf.Tensor:
+        return normalize_img(entry, None)[0]
+
     def train_pipeline(self, ds: TFDataset) -> TFDataset:
         return ds.map(normalize_img, num_parallel_calls=tf.data.experimental.AUTOTUNE)\
             .cache()\
@@ -55,7 +58,7 @@ class CIFAR10Default(TFModelDefinition, CIFAR10Model):
         model.compile(
             optimizer=keras.optimizers.Adam(0.001),
             loss=keras.losses.SparseCategoricalCrossentropy(),
-            metrics=[keras.metrics.SparseCategoricalAccuracy()],
+            metrics=[keras.metrics.SparseCategoricalAccuracy(name='acc')],
         )
         return model
 
@@ -78,7 +81,7 @@ class CIFAR10AssessorProbabilisticDefault(CIFAR10Default):
         model.compile(
             optimizer=keras.optimizers.Adam(0.001),
             loss=keras.losses.BinaryCrossentropy(),
-            metrics=[keras.metrics.BinaryAccuracy()],
+            metrics=[keras.metrics.BinaryAccuracy(name='acc')],
         )
         return model
 
@@ -111,7 +114,7 @@ class CIFAR10Wide(TFModelDefinition):
         definition.compile(
             optimizer=keras.optimizers.Adam(0.001),
             loss=keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-            metrics=[keras.metrics.SparseCategoricalAccuracy()]
+            metrics=[keras.metrics.SparseCategoricalAccuracy(name='acc')]
         )
 
         return definition
@@ -133,7 +136,7 @@ class CIFAR10AssessorProbabilisticWide(CIFAR10Wide):
         definition.compile(
             optimizer=keras.optimizers.Adam(0.001),
             loss=keras.losses.BinaryCrossentropy(from_logits=True),
-            metrics=[keras.metrics.BinaryAccuracy()]
+            metrics=[keras.metrics.BinaryAccuracy(name='acc')]
         )
 
         return definition
@@ -144,4 +147,4 @@ class CIFAR10AssessorProbabilisticWide(CIFAR10Wide):
 
 def normalize_img(image, label):
     """Normalizes images: `uint8` -> `float32`."""
-    return tf.cast(image, tf.float32) / tf.float32(255.), label  # type: ignore
+    return tf.cast(image, tf.float32) / 255.0, label  # type: ignore

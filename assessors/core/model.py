@@ -91,6 +91,7 @@ class Restore:
             print(f'{name} will not be restored due to restore="off"')
         else:
             if self.should_restore_full():
-                print(f"Restoring {name} from {self.path}")
+                pass
+                # print(f"Restoring {name} from {self.path}")
             else:
                 print(f"Restoring {name} from checkpoint {self.path}")

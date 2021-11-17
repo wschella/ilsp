@@ -80,6 +80,13 @@ class Dataset(Generic[E, SELF], ABC, Iterable[E], Sized):
         pass
 
     @abstractmethod
+    def encode(self, val) -> Any:
+        """
+        Encode the given value into a format suitable for the dataset.
+        """
+        pass
+
+    @abstractmethod
     def skip(self, n: int) -> Dataset[E, SELF]:
         """
         Skip the first n elements of the dataset.

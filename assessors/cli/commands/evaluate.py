@@ -76,7 +76,7 @@ def evaluate_assessor(ctx, **kwargs):
             asss_record = AssessorPredictionRecord(
                 inst_index=record['inst_index'],
                 inst_target=record['inst_target'],
-                syst_features=record['syst_features'],
+                syst_features=record['syst_features'].tolist(),
                 syst_prediction=record['syst_prediction'].tolist(),
                 syst_pred_score=record['syst_pred_score'],
                 syst_pred_loss=record['syst_pred_loss'],

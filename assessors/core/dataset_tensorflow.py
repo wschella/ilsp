@@ -98,6 +98,9 @@ class TFDataset(Dataset[E, 'TFDataset']):
     def as_numpy_sequence(self) -> Sequence[E]:
         return self.ds.as_numpy_iterator()  # type: ignore
 
+    def encode(self, val) -> Any:
+        return tf.convert_to_tensor(val)
+
     def concat(self, other: TFDataset[E]) -> Dataset[E, TFDataset]:
         return TFDataset(self.ds.concatenate(other.ds))
 
