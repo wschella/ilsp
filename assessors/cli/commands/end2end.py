@@ -20,12 +20,13 @@ class End2EndArgs(CommandArguments):
     base_model: str = "default"
     restore_systems: Restore.Options = "off"
     restore_assessor: Restore.Options = "off"
-    test_size: int = 10000
+    identifier: str = "k5_r1"
     save: bool = True
     download: bool = True
     assessor_model: str = "mnist_default"
     output_path: Path = Path("results.csv")
     folds: int = 5
+    repeats: int = 1
 
     def validate(self):
         self.parent.validate()
@@ -40,10 +41,11 @@ class End2EndArgs(CommandArguments):
 @click.option('-b', '--base-model', default='default', help="The base model variant to train")
 @click.option('-a', '--assessor-model', default='mnist_default', help="The assessor model variant to train")
 @click.option('-f', '--folds', default=5, help="The number of folds to use for cross-validation")
+@click.option('-r', '--repeats', default=1, help="The number of models to train per fold")
+@click.option('-i', '--identifier', required=True, help="The identifier for the assessor")
 @click.option('-o', '--output-path', default=Path('results.csv'), type=click.Path(path_type=Path), help="The file to write the results to")
 @click.option('--restore-systems', default='off', help="Whether to restore base systems. Options [full, checkpoint, off]")
 @click.option('--restore-assessor', default='off', help="Whether to restore assessor model. Options [full, checkpoint, off]")
-@click.option('-t', '--test-size', default=10000, help="The number of test samples to use for testing the assessor")
 @click.option('--save/--no-save', default=True, help="Whether to save models")
 @click.option('--download/--no-download', default=True, help="Whether to download datasets")
 @click.pass_context
@@ -67,9 +69,9 @@ def end2end(ctx, **kwargs):
         dataset=args.dataset,
         model=args.base_model,
         folds=args.folds,
+        repeats=args.repeats,
         restore=args.restore_systems,
-        save=args.save
-    )
+        save=args.save)
 
     # Make assessor dataset
     print("# Making assessor dataset")
@@ -77,9 +79,10 @@ def end2end(ctx, **kwargs):
         dataset_make,
         dataset=args.dataset,
         model=args.base_model,
-        folds=args.folds)
+        folds=args.folds,
+        repeats=args.repeats)
     dataset_path = dataset_make.artifact_location(  # type: ignore
-        args.dataset, args.base_model, args.folds)
+        args.dataset, args.base_model, args.folds, args.repeats)
 
     # Train assessor
     print("# Training assessor")
@@ -88,7 +91,7 @@ def end2end(ctx, **kwargs):
         dataset=dataset_path,
         model=args.assessor_model,
         restore=args.restore_assessor,
-        test_size=args.test_size,
+        identifier=args.identifier,
         save=args.save)
 
     # Evaluate assessor
@@ -98,6 +101,6 @@ def end2end(ctx, **kwargs):
         evaluate_assessor,
         dataset=dataset_path,
         model=args.assessor_model,
+        identifier=args.identifier,
         output_path=args.output_path,
-        test_size=args.test_size,
         overwrite=True)

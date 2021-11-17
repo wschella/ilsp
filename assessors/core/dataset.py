@@ -137,6 +137,13 @@ class Dataset(Generic[E, SELF], ABC, Iterable[E], Sized):
         pass
 
     @abstractmethod
+    def split_relative(self, ratio: float) -> Tuple[Dataset[E, SELF], Dataset[E, SELF]]:
+        """
+        Split the dataset at a given ratio.
+        """
+        pass
+
+    @abstractmethod
     def as_numpy_sequence(self) -> Sequence[E]:
         pass
 

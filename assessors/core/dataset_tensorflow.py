@@ -51,8 +51,9 @@ class TFDatasetDescription(DatasetDescription[E, 'TFDataset']):
 
 class CSVDatasetDescription(DatasetDescription[E, 'TFDataset']):
     name: str
+    target_column_name = 'class'
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, target_column_name: str = 'class'):
         self.name = name
 
     def download(self, dest: Path = None) -> None:
@@ -62,12 +63,18 @@ class CSVDatasetDescription(DatasetDescription[E, 'TFDataset']):
         return self._load(None)
 
     def _load(self, split) -> Dict[str, TFDataset[E]]:
+        from sklearn import preprocessing
+
         path = Path("./datasets/") / self.name
-        pdds = pd.read_csv(path)
-        pdds['class'] = pd.Categorical(pdds['class']).codes  # type: ignore
-        target = pdds.pop('class')
-        ds = tf.data.Dataset.from_tensor_slices((pdds.values, target.values))
-        # ds = tf.data.experimental.make_csv_dataset(str(path), batch_size=32, label_name="class")
+        df = pd.read_csv(path)
+
+        target = df.pop(self.target_column_name)
+        target = preprocessing.LabelEncoder().fit_transform(target)
+
+        scaler = preprocessing.StandardScaler()
+        df = pd.DataFrame(scaler.fit_transform(df), columns=df.columns)
+
+        ds = tf.data.Dataset.from_tensor_slices((df.values, target))
         return {'all': TFDataset(ds)}
 
     def split(self, name: str) -> TFDataset[E]:
@@ -129,6 +136,10 @@ class TFDataset(Dataset[E, 'TFDataset']):
 
     def split_absolute(self, split_at: int) -> Tuple[Dataset[E, TFDataset], Dataset[E, TFDataset]]:
         ds1, ds2 = dsetf.split_absolute(self.ds, split_at)
+        return TFDataset(ds1), TFDataset(ds2)
+
+    def split_relative(self, ratio: float) -> Tuple[Dataset[E, TFDataset], Dataset[E, TFDataset]]:
+        ds1, ds2 = dsetf.split_relative(self.ds, ratio)
         return TFDataset(ds1), TFDataset(ds2)
 
     def take(self, n: int) -> Dataset[E, TFDataset]:

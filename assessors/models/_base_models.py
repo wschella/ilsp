@@ -19,22 +19,21 @@ class TFTabularClassification(TFModelDefinition, ABC):
     """
 
     def preproces_input(self, entry) -> tf.Tensor:
-        return normalize_img(entry, None)[0]
+        return entry
 
     def score(self, y_true, y_pred) -> float:
-        return (tf.math.argmax(y_pred, axis=1) == y_true)[0]
+        return float((tf.math.argmax(y_pred, axis=1) == y_true)[0])
 
     def train_pipeline(self, ds: tf.data.Dataset) -> tf.data.Dataset:
-        return ds.map(normalize_img, num_parallel_calls=tf.data.experimental.AUTOTUNE)\
-            .cache()\
+        # We assume the tabular data is already normalized at load time
+        return ds.cache()\
             .shuffle(10000)\
-            .batch(128)\
+            .batch(256)\
             .prefetch(tf.data.experimental.AUTOTUNE)
 
     def test_pipeline(self, ds: tf.data.Dataset) -> tf.data.Dataset:
-        return ds.map(normalize_img, num_parallel_calls=tf.data.experimental.AUTOTUNE)\
-            .cache()\
-            .batch(256)\
+        return ds.cache()\
+            .batch(1024)\
             .prefetch(tf.data.experimental.AUTOTUNE)
 
 
@@ -48,7 +47,7 @@ class TFImageClassification(TFModelDefinition, ABC):
         return normalize_img(entry, None)[0]
 
     def score(self, y_true, y_pred) -> float:
-        return (tf.math.argmax(y_pred, axis=1) == y_true)[0]
+        return float((tf.math.argmax(y_pred, axis=1) == y_true)[0])
 
     def train_pipeline(self, ds: tf.data.Dataset) -> tf.data.Dataset:
         return ds.map(normalize_img, num_parallel_calls=tf.data.experimental.AUTOTUNE)\

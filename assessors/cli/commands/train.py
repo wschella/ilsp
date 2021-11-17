@@ -27,7 +27,6 @@ class TrainBaseArgs(TrainArgs):
     parent: CLIArgs = CLIArgs()
     dataset: str = "mnist"
     model: str = "default"
-    test_size: int = 10000
 
     def validate(self):
         super().validate()
@@ -38,7 +37,6 @@ class TrainBaseArgs(TrainArgs):
 @cli.command(name='train-base')
 @click.argument('dataset')
 @click.option('-m', '--model', default='default', help="The model variant to train")
-@click.option('-t', '--test-size', default=10000, help="The size of the test set")
 @click.option("-r", "--restore", default="full", show_default=True, help="Wether to restore the model if possible. Options [full, checkpoint, off]")
 @click.pass_context
 def train_base(ctx, **kwargs):
@@ -56,7 +54,7 @@ def train_base(ctx, **kwargs):
     path = Path(f"artifacts/models/{args.dataset}/{args.model}/base/")
     model_def: ModelDefinition = get_model_def(args.dataset, args.model)()
 
-    (train, test) = dataset.split_absolute(-args.test_size)
+    (train, test) = dataset.split_relative(-0.2)
     print(f'Train size: {len(train)}, test size: {len(test)}')
     model = model_def.train(train, validation=test, restore=Restore(path, args.restore))
     model.save(path)
@@ -68,6 +66,7 @@ def train_base(ctx, **kwargs):
 @dataclass
 class TrainKFoldArgs(TrainArgs):
     folds: int = 5
+    repeats: int = 1
     dataset: str = "mnist"
     model: str = "default"
     save: bool = True
@@ -81,8 +80,9 @@ class TrainKFoldArgs(TrainArgs):
 @cli.command(name='train-kfold')
 @click.argument('dataset')
 @click.option('-f', '--folds', default=5, help="The number of folds")
+@click.option('-r', '--repeats', default=1, help="The number of models that will be trained for each fold")
 @click.option('-m', '--model', default='default', help="The model variant to train")
-@click.option("-r", "--restore", default="full", show_default=True, help="Wether to restore the model if possible. Options [full, checkpoint, off]")
+@click.option("--restore", default="full", show_default=True, help="Wether to restore the model if possible. Options [full, checkpoint, off]")
 @click.option("--save/--no-save", default=True, show_default=True, help="Wether to save the model")
 @click.pass_context
 def train_kfold(ctx, **kwargs):
@@ -96,11 +96,15 @@ def train_kfold(ctx, **kwargs):
     dsds: DatasetDescription = get_dataset_description(args.dataset)
     dataset: Dataset = dsds.load_all()
 
+    base_path = Path(
+        f"artifacts/models/{args.dataset}/{args.model}/kfold_f{args.folds}_r{args.repeats}/")
     for i, (train, test) in enumerate(dse.k_folds(dataset, args.folds)):
-        path = Path(f"artifacts/models/{args.dataset}/{args.model}/kfold_{args.folds}/{i}")
-        model = model_def.train(train, validation=test, restore=Restore(path, args.restore))
-        if args.save:
-            model.save(path)
+        for repeat in range(args.repeats):
+            print(f'Fold {i+1}/{args.folds}, repeat {repeat+1}/{args.repeats}')
+            path = base_path / f"fold_{i}" / f"model_{repeat}"
+            model = model_def.train(train, validation=test, restore=Restore(path, args.restore))
+            if args.save:
+                model.save(path)
 
 
 # -----------------------------------------------------------------------------
@@ -108,8 +112,8 @@ def train_kfold(ctx, **kwargs):
 @dataclass
 class TrainAssessorArgs(TrainArgs):
     dataset: Path = Path("artifacts/datasets/mnist/kfold/")
-    test_size: int = 10000
     model: str = "mnist_default"
+    identifier: str = "k5_r1"
     save: bool = True
 
     def validate(self):
@@ -120,8 +124,8 @@ class TrainAssessorArgs(TrainArgs):
 
 @cli.command(name='train-assessor')
 @click.argument('dataset', type=click.Path(exists=True, path_type=Path))
-@click.option('-s', '--test-size', default=10000, help="The size of the test split.")
 @click.option('-m', '--model', default='mnist_default', help="The model variant to train.")
+@click.option('-i', '--identifier', required=True, help="The identifier of assessor (for saving path).")
 @click.option("-r", "--restore", default="full", show_default=True, help="Wether to restore the model if possible. Options [full, checkpoint, off]")
 @click.option("--save/--no-save", default=True, show_default=True, help="Wether to save the model")
 @click.pass_context
@@ -141,9 +145,10 @@ def train_assessor(ctx, **kwargs):
         path=args.dataset).load_all()
     supervised = _dataset.map(to_supervised)
 
-    path = Path(f"artifacts/models/{dataset_name}/{model_name}/assessor/")
+    path = Path(f"artifacts/models/{dataset_name}/{model_name}/assessor_{args.identifier}/")
 
-    (train, test) = supervised.split_absolute(-args.test_size)
+    (train, test) = supervised.split_relative(-0.2)
+    print(f'Train size: {len(train)}, test size: {len(test)}')
     model = model_def.train(train, validation=test, restore=Restore(path, args.restore))
     if args.save:
         model.save(path)

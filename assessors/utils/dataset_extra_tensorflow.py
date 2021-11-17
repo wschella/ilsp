@@ -47,13 +47,16 @@ def concatenate_all(datasets: Iterable[tf.data.Dataset]) -> tf.data.Dataset:
     return reduce(lambda a, b: a.concatenate(b), datasets)
 
 
-def split(ds: tf.data.Dataset, part: float) -> Tuple[tf.data.Dataset, tf.data.Dataset]:
+def split_relative(ds: tf.data.Dataset, part: float) -> Tuple[tf.data.Dataset, tf.data.Dataset]:
     """
     Split a Dataset in two Datasets of sizes respectively :part: and 1 - :part:
     of the total.
     We round up for the first one, and down for the second.
     """
+    assert -1. <= part <= 1., "Ratio should be between -1 and 1"
     total = ds.cardinality()
+    if part < 0.:
+        part = 1. + part
     end = ceil(total * part)
     return (ds.take(end), ds.skip(end))
 

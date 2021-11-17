@@ -20,8 +20,8 @@ from assessors.cli.cli import cli, CLIArgs
 class EvaluateAssessorArgs(CommandArguments):
     dataset: Path
     parent: CLIArgs = CLIArgs()
-    test_size: int = 10000
     output_path: Path = Path("./results.csv")
+    identifier: str = "f5_r1"
     overwrite: bool = False
     model: str = "mnist_default"
 
@@ -34,7 +34,7 @@ class EvaluateAssessorArgs(CommandArguments):
 @cli.command(name='eval-assessor')
 @click.argument('dataset', type=click.Path(exists=True, file_okay=False, path_type=Path))
 @click.option('-o', '--output-path', default="./results.csv", type=click.Path(path_type=Path), help="The output path")
-@click.option('-t', '--test-size', default=10000, help="The test set size")
+@click.option('-i', '--identifier', required=True, help="The identifier of the assessor")
 @click.option('--overwrite', is_flag=True, help="Overwrite the output file if it exists", default=False)
 @click.option('-m', '--model', default='mnist_default', help="The model to evaluate")
 @click.pass_context
@@ -51,12 +51,12 @@ def evaluate_assessor(ctx, **kwargs):
     # Load assessor model
     [dataset_name, model_name] = args.model.split('_')
     model_def: ModelDefinition = get_assessor_def(dataset_name, model_name)()
-    model_path = Path(f"artifacts/models/{dataset_name}/{model_name}/assessor/")
+    model_path = Path(f"artifacts/models/{dataset_name}/{model_name}/assessor_{args.identifier}/")
     model = model_def.restore_from(model_path)
 
     # Load & mangle dataset
     _ds: Dataset[PredictionRecord, Any] = CustomDatasetDescription(path=args.dataset).load_all()
-    (_train, test) = _ds.split_absolute(-args.test_size)
+    (_train, test) = _ds.split_relative(-0.2)
 
     def to_supervised(record: PredictionRecord):
         return (record['inst_features'], record['syst_pred_score'])
@@ -106,7 +106,6 @@ def evaluate_assessor(ctx, **kwargs):
 class EvaluateSystemArgs(CommandArguments):
     parent: CLIArgs = CLIArgs()
     dataset: str = "mnist"
-    test_size: int = 10000
     model: str = "default"
 
     def validate(self):
@@ -115,7 +114,6 @@ class EvaluateSystemArgs(CommandArguments):
 
 @cli.command(name='eval-system')
 @click.argument('dataset')
-@click.option('-t', '--test-size', default=10000, help="The test set size")
 @click.option('-m', '--model', default='default', help="The model to evaluate")
 @click.pass_context
 def evaluate_system(ctx, **kwargs):
@@ -130,7 +128,7 @@ def evaluate_system(ctx, **kwargs):
 
     # Load & mangle dataset
     _ds: Dataset = get_dataset_description(args.dataset).load_all()
-    (_train, test) = _ds.split_absolute(-args.test_size)
+    (_train, test) = _ds.split_relative(-0.2)
 
     y_true = test.map(lambda e: e[1]).as_numpy()
     y_pred = model.predict_all(test.map(lambda e: e[0]))
