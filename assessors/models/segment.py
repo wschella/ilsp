@@ -4,11 +4,11 @@ from typing import *
 import tensorflow as tf
 import tensorflow.keras as keras
 
-from assessors.core import TFModelDefinition
 import assessors.utils.callbacks_extra as cbe
+import assessors.models._base_models as _base_models
 
 
-class SegmentDefault(TFModelDefinition):
+class SegmentDefault(_base_models.TFTabularClassification):
     epochs: int = 20
 
     def name(self) -> str:

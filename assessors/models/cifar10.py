@@ -1,44 +1,14 @@
 from __future__ import annotations
-from abc import ABC
 from typing import *
 
-import tensorflow as tf
 import tensorflow.keras as keras
-from tensorflow.python.data.ops.dataset_ops import Dataset as TFDataset
 from keras import layers
 
-from assessors.core import TFModelDefinition
-from assessors.core.model import Restore, TrainedModel
 from assessors.models.architectures.wide_resnet import wide_resnet
+import assessors.models._base_models as _base_models
 
 
-class CIFAR10Model(ABC):
-    """
-    Base configuration for CIFAR10 models, providing pipelines and score functions
-    shared by all.
-    """
-
-    def score(self, y_true, prediction) -> float:
-        return float(tf.math.argmax(prediction, axis=1) == y_true)
-
-    def preproces_input(self, entry) -> tf.Tensor:
-        return normalize_img(entry, None)[0]
-
-    def train_pipeline(self, ds: TFDataset) -> TFDataset:
-        return ds.map(normalize_img, num_parallel_calls=tf.data.experimental.AUTOTUNE)\
-            .cache()\
-            .shuffle(1000)\
-            .batch(128)\
-            .prefetch(tf.data.experimental.AUTOTUNE)
-
-    def test_pipeline(self, ds: TFDataset) -> TFDataset:
-        return ds.map(normalize_img, num_parallel_calls=tf.data.experimental.AUTOTUNE)\
-            .cache()\
-            .batch(256)\
-            .prefetch(tf.data.experimental.AUTOTUNE)
-
-
-class CIFAR10Default(TFModelDefinition, CIFAR10Model):
+class CIFAR10Default(_base_models.TFImageClassification):
     epochs: int = 10
 
     def name(self) -> str:
@@ -63,9 +33,9 @@ class CIFAR10Default(TFModelDefinition, CIFAR10Model):
         return model
 
 
-class CIFAR10AssessorProbabilisticDefault(CIFAR10Default):
+class CIFAR10AssessorDefault(CIFAR10Default):
     def name(self) -> str:
-        return "cifar10_assessor_probabilistic_default"
+        return "cifar10_assessor_default"
 
     def definition(self):
         model = keras.models.Sequential()
@@ -88,7 +58,7 @@ class CIFAR10AssessorProbabilisticDefault(CIFAR10Default):
 # ------------------ Wide Model ---------------------
 
 
-class CIFAR10Wide(TFModelDefinition):
+class CIFAR10Wide(_base_models.TFImageClassification):
     input_shape: Tuple[int, int, int] = (32, 32, 3)
     # depth: int = 28
     depth = 16
@@ -120,7 +90,7 @@ class CIFAR10Wide(TFModelDefinition):
         return definition
 
 
-class CIFAR10AssessorProbabilisticWide(CIFAR10Wide):
+class CIFAR10AssessorWide(CIFAR10Wide):
     epochs = 25
     num_classes = 2
 
@@ -140,11 +110,3 @@ class CIFAR10AssessorProbabilisticWide(CIFAR10Wide):
         )
 
         return definition
-
-    def train(self, dataset, validation, restore: Restore) -> TrainedModel:
-        return self._train(dataset, validation, restore)
-
-
-def normalize_img(image, label):
-    """Normalizes images: `uint8` -> `float32`."""
-    return tf.cast(image, tf.float32) / 255.0, label  # type: ignore

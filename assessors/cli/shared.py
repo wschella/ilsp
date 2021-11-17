@@ -17,10 +17,10 @@ def get_model_def(dataset, model_name) -> type[ModelDefinition]:
 def get_assessor_def(dataset, model_name) -> type[ModelDefinition]:
     model: type[ModelDefinition] = {  # type: ignore
         'mnist': {
-            "default": models.MNISTAssessorProbabilistic,
+            "default": models.MNISTAssessorDefault,
         },
         'cifar10': {
-            "default": models.CIFAR10AssessorProbabilisticDefault,
+            "default": models.CIFAR10AssessorDefault,
         },
         'segment': {
             "default": models.SegmentAssessorDefault,
