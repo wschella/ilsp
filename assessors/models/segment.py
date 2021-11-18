@@ -58,3 +58,13 @@ class SegmentAssessorDefault(SegmentDefault):
         )
 
         return model
+
+    def get_fit_kwargs(self, model, dataset, **kwargs) -> Dict:
+        return {
+            "class_weight": {
+                # 0 score is a failure, we want to detect these
+                # currently, systems get about 95% accuracy, so 1/20 is a failure
+                0: 20,
+                1: 1,
+            }
+        }
