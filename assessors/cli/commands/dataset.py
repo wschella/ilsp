@@ -90,7 +90,7 @@ def dataset_make(ctx, **kwargs):
                     inst_index=entry['index'],
                     inst_features=entry['features'],
                     inst_target=entry['target'],
-                    syst_features=test.encode([i]),
+                    syst_features=test.encode([i, repeat]),
                     syst_prediction=y_pred,
                     syst_pred_loss=model.loss(y_true, y_pred),
                     syst_pred_score=model.score(y_true, y_pred),

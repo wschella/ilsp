@@ -48,5 +48,15 @@ class MNISTAssessorDefault(MNISTDefault):
 
         return model
 
+    def get_fit_kwargs(self, model, dataset, **kwargs) -> Dict:
+        return {
+            "class_weight": {
+                # 0 score is a failure, we want to detect these
+                # currently, systems get about 97% accuracy, so +- 1/33 is a failure
+                0: 20,
+                1: 1,
+            }
+        }
+
     def score(self, y_true, y_pred) -> float:
         raise NotImplementedError()
