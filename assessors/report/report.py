@@ -1,16 +1,20 @@
-from abc import ABC, abstractmethod
-import traceback
 from typing import *
 
-from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
 import sklearn.metrics as metrics
 import sklearn.calibration as calibration
 import pandas as pd
 import numpy as np
 
+from assessors.report.renderer import Component
+from assessors.report.components import *
+import assessors.report.plotting as plotting
+
 
 class ResultsRefContainer():
+    """
+    A simple boilerplate class that contains dataframe of assessor results by reference.
+    Can just be inherited from to avoid writing __init__ every time.
+    """
     results: pd.DataFrame
 
     def __init__(self, results: pd.DataFrame) -> None:
@@ -18,46 +22,24 @@ class ResultsRefContainer():
 
 
 class ResultsCopyContainer():
+    """
+    A simple boilerplate class that contains dataframe of assessor results by copy.
+    Can just be inherited from to avoid writing __init__ every time.
+    """
     results: pd.DataFrame
 
     def __init__(self, results: pd.DataFrame) -> None:
         self.results = results.copy(deep=True)
 
 
-class Component(ABC):
-    @abstractmethod
-    def render(self) -> str:
-        pass
-
-    def _repr_html_(self) -> str:
-        try:
-            return self.render()
-        except Exception as e:
-            return f'''
-            <div class="alert alert-danger">
-                <h3>{type(self).__name__}</h3>
-                <h4>{type(e).__name__}</h4>
-                <pre>{e}</pre>
-                <pre>{traceback.format_exc()}</pre>
-            <div>
-            '''
-
-    def __str__(self) -> str:
-        return self._repr_html_()
-
-
-class Plot(Component):
-    def __init__(self, fig: Figure) -> None:
-        self.fig = fig
-
-    def render(self) -> str:
-        plt.close(fig=self.fig)
-        return f'<img src="data:image/png;base64,{fig_to_base64(self.fig)}">'
-
 # -----------------------------------------------------------------------------
 
 
-class ReportResult(Component, ResultsRefContainer):
+class AssessorReport(Component, ResultsRefContainer):
+    """
+    Reports various results from assessor experiments as a HTML page.
+    """
+
     def render(self) -> str:
         df = self.results
         return f'''
@@ -211,116 +193,10 @@ class AssessorCalibration(Component, ResultsRefContainer):
         <div>
             <h3>Assessor Calibration</h3>
             {Plot(fig=cal.figure_)}
-            {Plot(fig=plot_assessor_prob_histogram(df))}
+            {Plot(fig=plotting.plot_assessor_prob_histogram(df))}
             <div>
-                {Quantiles(probabilities, n_quantiles=5)}
+                {Quantiles(probabilities)}
             </div>
-        </div>
-        '''
-
-
-class CalibrationInfo(TypedDict):
-    bins: Any
-
-
-class CalibrationBin(TypedDict):
-    avg_prob: float
-    avg_acc: float
-    count: int
-
-
-def assessor_calibration_info(df: pd.DataFrame, n_bins: int = 10) -> Dict[str, Any]:
-    # report threshold bigger than 0
-    probabilities = df.asss_prediction.map(lambda p: p[0])
-    y_true = df.syst_pred_score
-    y_pred = df.asss_prediction.map(lambda p: p[0] > 0.5)
-
-    bins = np.linspace(0.0, 1.0, n_bins + 1)
-    indices = np.digitize(probabilities, bins, right=True)
-
-    bins = []
-    for b in range(n_bins):
-        selected = np.where(indices == b + 1)[0]
-        if len(selected) > 0:
-            bins.append({
-                "avg_prob": np.mean(probabilities[selected]),
-                "avg_acc": np.mean(y_true[selected] == y_pred[selected]),
-                "count": len(selected)
-            })
-
-    return {
-        "bins": bins,
-    }
-
-
-def plot_assessor_prob_histogram(df: pd.DataFrame, n_bins: int = 20, draw_averages: bool = True) -> Figure:
-    # render average confidence
-    # render average accuracy
-    # render bin
-    probabilities = df.asss_prediction.map(lambda p: p[0])
-
-    bin_size = 1.0 / n_bins
-    bins = np.linspace(0.0, 1.0, n_bins + 1)
-    indices = np.digitize(probabilities, bins, right=True)
-
-    counts = np.zeros(n_bins)
-    for b in range(n_bins):
-        selected = np.where(indices == b + 1)[0]
-        if len(selected) > 0:
-            counts[b] = len(selected)
-
-    fig = plt.figure()
-    ax = fig.add_subplot()
-    ax.set_title("Probability Histogram")
-    ax.set_xlabel("Probability")
-    ax.set_ylabel("Count")
-    ax.bar(
-        x=bins[:-1] + bin_size / 2.0,  # type: ignore
-        height=counts,
-        width=bin_size,
-    )
-    if draw_averages:
-        avg_conf = np.mean(probabilities)
-        conf_plt = ax.axvline(x=avg_conf, ls="dotted", lw=3,
-                              c="#444", label="Avg. probability")
-        ax.legend(handles=[conf_plt])
-
-    return fig
-
-
-class Quantiles(Component):
-    """
-    https://pandas.pydata.org/docs/reference/api/pandas.arrays.IntervalArray.html
-    https://pandas.pydata.org/docs/reference/api/pandas.IntervalIndex.html
-    """
-
-    def __init__(self, series: pd.Series, n_quantiles: int = 5) -> None:
-        self.series = series
-        self.n_quantiles = n_quantiles
-
-    def render(self) -> str:
-        from pandas.arrays import IntervalArray
-
-        quant_size = len(self.series) / self.n_quantiles
-        quants = pd.qcut(self.series, self.n_quantiles)
-        ia: IntervalArray = quants.dtype.categories
-
-        breakpoints = list(ia.right.values)  # type: ignore
-        li = "\n".join(f'<li>{li}</li>' for li in breakpoints)
-        return f'''
-        <div>
-            <p>
-                <em>{self.n_quantiles}</em> quantiles,
-                <em>{quant_size}</em> per quantile,
-                <em>{len(self.series)}</em> total
-            </p>
-            <p>
-                median: {self.series.median():.2f},
-                mean:   {self.series.mean():.2f},
-            </p>
-            <ul>
-                {li}
-            </ul>
         </div>
         '''
 
@@ -334,15 +210,3 @@ def prediction_to_label(prediction) -> int:
 
 def threshold_prediction(threshold: float) -> Callable[[Any], int]:
     return lambda prediction: 1 if prediction[0] > threshold else 0
-
-
-def fig_to_base64(fig):
-    import base64
-    from io import BytesIO
-
-    buf = BytesIO()
-    fig.savefig(buf, format='png')
-    encoded = base64.b64encode(buf.getvalue()).decode("utf-8")
-    return encoded
-
-# ----------------

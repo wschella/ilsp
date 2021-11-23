@@ -3,6 +3,7 @@
 # We don't commit data or model artifacts to source.
 /artifacts/
 results.csv
+results.html
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

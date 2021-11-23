@@ -14,6 +14,7 @@ from tqdm import tqdm
 from assessors.core import ModelDefinition, CustomDatasetDescription, Dataset, PredictionRecord, TypedPredictionRecord, AssessorPredictionRecord
 from assessors.cli.shared import CommandArguments, get_assessor_def, get_dataset_description, get_model_def
 from assessors.cli.cli import cli, CLIArgs
+import assessors.report as rr
 
 
 @dataclass
@@ -98,6 +99,9 @@ def evaluate_assessor(ctx, **kwargs):
         print(metrics.classification_report(y_true, y_pred))
         print(metrics.confusion_matrix(y_true, y_pred))
         print(f"AUC: {metrics.roc_auc_score(y_true, y_pred)}")
+
+        # And create a report
+        rr.AssessorReport(df).save(Path(args.output_path).with_suffix(".html"))
 
 # --------------------
 
