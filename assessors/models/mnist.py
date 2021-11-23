@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import *
+import math
 
 import tensorflow.keras as keras
 import assessors.models._base_models as _base_models
@@ -53,7 +54,7 @@ class MNISTAssessorDefault(MNISTDefault):
             "class_weight": {
                 # 0 score is a failure, we want to detect these
                 # currently, systems get about 97% accuracy, so +- 1/33 is a failure
-                0: 20,
+                0: math.log(33),
                 1: 1,
             }
         }

@@ -91,7 +91,8 @@ def evaluate_assessor(ctx, **kwargs):
     # Print some simple results
     ctx.invoke(
         generate_report,
-        results=args.output_path.with_suffix(".html"),
+        results=args.output_path,
+        output_path=args.output_path.with_suffix(".html"),
         overwrite=args.overwrite)
 
 

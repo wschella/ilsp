@@ -8,6 +8,7 @@ from assessors.utils import dataset_extra as dse
 from assessors.core import ModelDefinition, Restore, Dataset, PredictionRecord, DatasetDescription, CustomDatasetDescription
 from assessors.cli.shared import CommandArguments, get_dataset_description, get_model_def, get_assessor_def
 from assessors.cli.cli import cli, CLIArgs
+from assessors.cli.commands.evaluate import evaluate_assessor
 
 
 @dataclass
@@ -115,6 +116,7 @@ class TrainAssessorArgs(TrainArgs):
     model: str = "mnist_default"
     identifier: str = "k5_r1"
     save: bool = True
+    evaluate: bool = True
 
     def validate(self):
         super().validate()
@@ -124,10 +126,11 @@ class TrainAssessorArgs(TrainArgs):
 
 @cli.command(name='train-assessor')
 @click.argument('dataset', type=click.Path(exists=True, path_type=Path))
-@click.option('-m', '--model', default='mnist_default', help="The model variant to train.")
+@click.option('-m', '--model', required=True, help="The model variant to train.")
 @click.option('-i', '--identifier', required=True, help="The identifier of assessor (for saving path).")
-@click.option("-r", "--restore", default="full", show_default=True, help="Wether to restore the model if possible. Options [full, checkpoint, off]")
-@click.option("--save/--no-save", default=True, show_default=True, help="Wether to save the model")
+@click.option("-r", "--restore", default="full", show_default=True, help="Wether to restore the assessor if possible. Options [full, checkpoint, off]")
+@click.option("--save/--no-save", default=True, show_default=True, help="Wether to save the assessor")
+@click.option("--evaluate/--no-evaluate", default=True, show_default=True, help="Wether to evaluate the model")
 @click.pass_context
 def train_assessor(ctx, **kwargs):
     """
@@ -152,3 +155,9 @@ def train_assessor(ctx, **kwargs):
     model = model_def.train(train, validation=test, restore=Restore(path, args.restore))
     if args.save:
         model.save(path)
+
+    ctx.invoke(
+        evaluate_assessor,
+        dataset=args.dataset,
+        model=args.model,
+        identifier=args.identifier)
