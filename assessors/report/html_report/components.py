@@ -2,7 +2,7 @@ from matplotlib.figure import Figure
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from assessors.report.renderer import Component
+from assessors.report.html_report.renderer import Component
 
 
 class Plot(Component):

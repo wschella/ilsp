@@ -10,6 +10,7 @@ import pandas as pd
 import numpy as np
 import sklearn.metrics as metrics
 from tqdm import tqdm
+from assessors.cli.commands.report import generate_report
 
 from assessors.core import ModelDefinition, CustomDatasetDescription, Dataset, PredictionRecord, TypedPredictionRecord, AssessorPredictionRecord
 from assessors.cli.shared import CommandArguments, get_assessor_def, get_dataset_description, get_model_def
@@ -88,20 +89,11 @@ def evaluate_assessor(ctx, **kwargs):
     print(f"Wrote results to {args.output_path}")
 
     # Print some simple results
-    with open(args.output_path, 'r', newline='') as csvfile:
+    ctx.invoke(
+        generate_report,
+        results=args.output_path.with_suffix(".html"),
+        overwrite=args.overwrite)
 
-        df = pd.read_csv(csvfile)
-        df.asss_prediction = df.asss_prediction.map(lambda s: np.array(json.loads(s)))
-        y_score = df['asss_prediction'].map(lambda p: p[0])
-        y_pred = y_score.map(lambda p: p > 0.5)
-        y_true = df['syst_pred_score']
-
-        print(metrics.classification_report(y_true, y_pred))
-        print(metrics.confusion_matrix(y_true, y_pred))
-        print(f"AUC: {metrics.roc_auc_score(y_true, y_pred)}")
-
-        # And create a report
-        rr.AssessorReport(df).save(Path(args.output_path).with_suffix(".html"))
 
 # --------------------
 

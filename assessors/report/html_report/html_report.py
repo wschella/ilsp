@@ -5,8 +5,8 @@ import sklearn.calibration as calibration
 import pandas as pd
 import numpy as np
 
-from assessors.report.renderer import Component
-from assessors.report.components import *
+from assessors.report.html_report.renderer import Component
+from assessors.report.html_report.components import *
 import assessors.report.plotting as plotting
 
 

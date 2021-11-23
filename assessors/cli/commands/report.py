@@ -40,20 +40,11 @@ def generate_report(ctx, **kwargs):
     if os.path.exists(args.output_path) and not args.overwrite:
         click.confirm(f"The file {args.output_path} already exists. Overwrite?", abort=True)
 
-    # Print some simple results and create a report
     with open(args.results, 'r', newline='') as csvfile:
-
+        # Print some simple results
         df = pd.read_csv(csvfile)
-        df.asss_prediction = df.asss_prediction.map(lambda s: np.array(json.loads(s)))
-        df.syst_prediction = df.syst_prediction.map(lambda s: np.array(json.loads(s)))
-        y_score = df['asss_prediction'].map(lambda p: p[0])
-        y_pred = y_score.map(lambda p: p > 0.5)
-        y_true = df['syst_pred_score']
+        rr.cli_report.print_simple(df)
 
-        print(metrics.classification_report(y_true, y_pred))
-        print(metrics.confusion_matrix(y_true, y_pred))
-        print(f"AUC: {metrics.roc_auc_score(y_true, y_pred)}")
-
-        # And create a report
-        rr.AssessorReport(df).save(Path(args.output_path).with_suffix(".html"))
+        # And create a full report
+        rr.AssessorReport(df).save(args.output_path)
         print(f"Report saved to {args.output_path}")
