@@ -23,7 +23,8 @@ class Component(ABC):
         return self._repr_html_()
 
     def on_error(self, e: Exception) -> str:
-        return GenericError(e).render()
+        # return GenericError(e).render()
+        raise e
 
     def save(self, path: Path) -> None:
         with open(path, "w") as f:

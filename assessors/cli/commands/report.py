@@ -43,6 +43,8 @@ def generate_report(ctx, **kwargs):
     with open(args.results, 'r', newline='') as csvfile:
         # Print some simple results
         df = pd.read_csv(csvfile)
+        df = rr.wrap.as_classification_with_binary_reward(df)
+
         rr.cli_report.print_simple(df)
 
         # And create a full report

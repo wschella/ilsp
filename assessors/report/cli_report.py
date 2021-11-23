@@ -5,9 +5,6 @@ import assessors.report as rr
 
 
 def print_simple(df: pd.DataFrame) -> None:
-
-    df = rr.wrap.as_classification_with_binary_reward(df)
-
     y_pred = df.asss_prediction.map(lambda p: p > 0.5)
     y_true = df.syst_pred_score
 

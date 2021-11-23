@@ -117,6 +117,7 @@ class TrainAssessorArgs(TrainArgs):
     identifier: str = "k5_r1"
     save: bool = True
     evaluate: bool = True
+    overwrite_results: bool = False
 
     def validate(self):
         super().validate()
@@ -131,6 +132,7 @@ class TrainAssessorArgs(TrainArgs):
 @click.option("-r", "--restore", default="full", show_default=True, help="Wether to restore the assessor if possible. Options [full, checkpoint, off]")
 @click.option("--save/--no-save", default=True, show_default=True, help="Wether to save the assessor")
 @click.option("--evaluate/--no-evaluate", default=True, show_default=True, help="Wether to evaluate the model")
+@click.option("--overwrite-results/--no-overwrite-results", default=False, show_default=True, help="Wether to overwrite the results")
 @click.pass_context
 def train_assessor(ctx, **kwargs):
     """
@@ -160,4 +162,5 @@ def train_assessor(ctx, **kwargs):
         evaluate_assessor,
         dataset=args.dataset,
         model=args.model,
-        identifier=args.identifier)
+        identifier=args.identifier,
+        overwrite=args.overwrite_results)

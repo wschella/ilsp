@@ -171,7 +171,7 @@ class AssessorPrecRecallCurve(Component, ResultsRefContainer):
 class AssessorCalibration(Component, ResultsRefContainer):
     def render(self) -> str:
         df = self.results
-        probabilities = df.asss_prediction.map(lambda p: p[0])
+        probabilities = df.asss_prediction
         cal = calibration.CalibrationDisplay.from_predictions(
             name="assessor",
             y_true=df.syst_pred_score,
@@ -212,4 +212,4 @@ def prediction_to_label(prediction) -> int:
 
 
 def threshold_prediction(threshold: float) -> Callable[[Any], int]:
-    return lambda prediction: 1 if prediction[0] > threshold else 0
+    return lambda prediction: 1 if prediction > threshold else 0

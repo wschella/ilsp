@@ -65,7 +65,7 @@ class SegmentAssessorDefault(SegmentDefault):
             "class_weight": {
                 # 0 score is a failure, we want to detect these
                 # currently, systems get about 95% accuracy, so 1/20 is a failure
-                0: math.log(20),
+                0: math.log(20) / 2,
                 1: 1,
             }
         }
