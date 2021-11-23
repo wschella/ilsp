@@ -17,14 +17,17 @@ class Component(ABC):
         try:
             return self.render()
         except Exception as e:
-            return GenericError(e).render()
+            return self.on_error(e)
 
     def __str__(self) -> str:
         return self._repr_html_()
 
+    def on_error(self, e: Exception) -> str:
+        return GenericError(e).render()
+
     def save(self, path: Path) -> None:
         with open(path, "w") as f:
-            f.write(self.render())
+            f.write(self._repr_html_())
 
 
 class GenericError(Component):

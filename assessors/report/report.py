@@ -49,6 +49,9 @@ class AssessorReport(Component, ResultsRefContainer):
         {AssessorResults(df)}
         '''
 
+    def on_error(self, e: Exception) -> str:
+        raise e
+
 
 class DFSanityCheck(Component, ResultsRefContainer):
 
