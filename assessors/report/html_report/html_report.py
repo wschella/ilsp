@@ -99,7 +99,7 @@ class AssessorResults(Component, ResultsRefContainer):
         <div>
             <h2>Assessor Results</h2>
             {AssessorMetrics(df)}
-            {AssessorConfusionMatrix(df)}
+            {AssessorClassificationReport(df)}
             {AssessorROCCurve(df)}
             {AssessorPrecRecallCurve(df)}
             {AssessorCalibration(df)}
@@ -111,19 +111,36 @@ class AssessorMetrics(Component, ResultsRefContainer):
     def render(self) -> str:
         df = self.results
 
+        n_predictions = df.shape[0]
         brier = metrics.brier_score_loss(df.syst_pred_score, df.asss_prediction)
+
+        def mispredictions(threshold: float) -> str:
+            pred = df.asss_prediction.map(threshold_prediction(threshold))
+            acc = metrics.accuracy_score(df.syst_pred_score, pred)
+            misses = (pred != df.syst_pred_score).sum()
+            return f'''
+            <li>
+                Mispredictions (threshold {threshold*100:.0f}%): {misses}/{n_predictions} ({100*acc:.2f}% acc)<br>
+            </li>
+            '''
+
         return f'''
         <div>
-            <h3>Assessor Metrics</h3>
-            <p>Brier Score: {brier}     vs    TODO<p>
+            <h3>Scalar Metrics</h3>
+            <p>Brier Score: {brier}     vs    TODO</p>
+            <ul>
+                {"".join([mispredictions(threshold) for threshold in [0.5, 0.75, 0.9]])}
+            </ul>
         </div>
         '''
 
 
-class AssessorConfusionMatrix(Component, ResultsRefContainer):
+class AssessorClassificationReport(Component, ResultsRefContainer):
     def render(self) -> str:
         df = self.results
+
         predictions = df.asss_prediction.map(threshold_prediction(0.5))
+        report = metrics.classification_report(df.syst_pred_score, predictions)
         conf_t50 = metrics.ConfusionMatrixDisplay.from_predictions(
             df.syst_pred_score,
             predictions,
@@ -132,7 +149,9 @@ class AssessorConfusionMatrix(Component, ResultsRefContainer):
         )
         return f'''
         <div>
-            <h3>Assessor Confusion Matrix</h3>
+            <h3>Classification Report</h3>
+            <p><strong>Threshold 50%</strong></p>
+            <pre>{report}</pre>
             {Plot(fig=conf_t50.figure_)}
         </div>
         '''
@@ -179,22 +198,19 @@ class AssessorCalibration(Component, ResultsRefContainer):
             n_bins=10,
             strategy="quantile")
 
-        # TODO: There is a discrepancy between reporting of accuracy
-        # for classification and actual positive labels for binary
-        # syst_pred_true_target_prob = list(
-        #     map(lambda p, t: p[0][t], df.syst_prediction, df.inst_target))
-        # calibration.CalibrationDisplay.from_predictions(
-        #     name="system confidence",
-        #     ax=cal.ax_,
-        #     n_bins=10,
-        #     y_true=df.syst_pred_score,
-        #     y_prob=syst_pred_true_target_prob,
-        #     strategy="quantile"
-        # )
+        calibration.CalibrationDisplay.from_predictions(
+            name="system (confidence calibration)",
+            ax=cal.ax_,
+            n_bins=10,
+            y_true=df.syst_pred_score,
+            y_prob=df.syst_prediction.map(max_prob),
+            strategy="quantile"
+        )
+        cal.ax_.set_title("Assessor vs. System (confidence calibration)")
 
         return f'''
         <div>
-            <h3>Assessor Calibration</h3>
+            <h3>Assessor (Confidence) Calibration</h3>
             {Plot(fig=cal.figure_)}
             {Plot(fig=plotting.plot_assessor_prob_histogram(df))}
             <div>
@@ -209,6 +225,10 @@ class AssessorCalibration(Component, ResultsRefContainer):
 
 def prediction_to_label(prediction) -> int:
     return np.argmax(prediction, axis=1)[0]
+
+
+def max_prob(prediction) -> float:
+    return np.max(prediction, axis=1)[0]
 
 
 def threshold_prediction(threshold: float) -> Callable[[Any], int]:
