@@ -227,6 +227,8 @@ class AssessorClassWiseAggregation(Component, ResultsRefContainer):
         return f'''
         <div>
             <h3>Class Wise Aggregation</h3>
+            <p>We report the times the assessor accuracy vs system accuracy</p>
+            <p>The system accuracy is averaged over all the systems in the population</p>
             {Plot(fig=plotting.plot_assessor_class_wise_aggregation(df))}
         </div>
         '''

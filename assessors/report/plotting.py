@@ -22,11 +22,14 @@ def lighten(rgb, scale):
 def plot_assessor_class_wise_aggregation(df: pd.DataFrame) -> Figure:
     fig, ax = plt.subplots()
 
-    asss_acc = metrics.accuracy_score(df.syst_pred_score, df.asss_prediction.map(lambda p: p > 0.5))
     syst_acc = metrics.accuracy_score(df.inst_target, df.syst_prediction.map(prediction_to_label))
+    asss_acc = metrics.accuracy_score(df.syst_pred_score, df.asss_prediction.map(lambda p: p > 0.5))
+    asss_pred_acc = df.asss_prediction.map(lambda p: p > 0.5) / len(df)
 
-    asss_class_accs = []
-    syst_class_accs = []
+    syst_class_accs = []  # The times the system is correct
+    asss_class_accs = []  # The times the assessor is correct
+    asss_pred_class_accs = []  # The times the assessor predicted the system to be correct
+
     class_support = []
     for target in np.sort(df.inst_target.unique()):
         selected = df.loc[df.inst_target == target]
@@ -34,6 +37,9 @@ def plot_assessor_class_wise_aggregation(df: pd.DataFrame) -> Figure:
             metrics.accuracy_score(
                 selected.syst_pred_score,
                 selected.asss_prediction.map(lambda p: p > 0.5)))
+
+        asss_pred_class_accs.append(
+            selected.asss_prediction.map(lambda p: p > 0.5).sum() / len(selected))
 
         syst_class_accs.append(
             metrics.accuracy_score(
@@ -44,13 +50,17 @@ def plot_assessor_class_wise_aggregation(df: pd.DataFrame) -> Figure:
 
     labels = np.sort(df.inst_target.unique())
     x = np.arange(len(labels))
-    width = 0.35
+    width = 0.25
 
-    syst_bar = ax.bar(x - width / 2, syst_class_accs, width, label="System Avg.")
-    asss_bar = ax.bar(x + width / 2, asss_class_accs, width, label="Assessor")
+    syst_acc_bar = ax.bar(x - width, syst_class_accs, width, label="System accuracy")
+    asss_acc_bar = ax.bar(x + width, asss_class_accs, width, label="Assessor accuracy")
+    asss_pred_bar = ax.bar(x, asss_pred_class_accs, width, label="Assessor predicted accuracy")
 
-    ax.axhline(y=syst_acc, ls="dashed", lw=3, c=lighten(syst_bar.patches[0].get_facecolor(), 0.8))
-    ax.axhline(y=asss_acc, ls="dashed", lw=3, c=lighten(asss_bar.patches[0].get_facecolor(), 0.8))
+    corresponding_color = lambda bar: lighten(bar.patches[0].get_facecolor(), 0.8)
+
+    # ax.axhline(y=syst_acc, ls="dashed", lw=3, c=corresponding_color(syst_acc_bar))
+    # ax.axhline(y=asss_acc, ls="dashed", lw=3, c=corresponding_color(asss_acc_bar))
+    # ax.axhline(y=asss_pred_acc, ls="dashed", lw=3, c=corresponding_color(asss_pred_bar))
 
     ax.set_title("Class Wise Aggregation")
     ax.set_xlabel("Class")
