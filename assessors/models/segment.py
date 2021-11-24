@@ -10,7 +10,7 @@ import assessors.models._base_models as _base_models
 
 
 class SegmentDefault(_base_models.TFTabularClassification):
-    epochs: int = 20
+    epochs: int = 25
 
     def name(self) -> str:
         return "segment_default"
@@ -23,7 +23,7 @@ class SegmentDefault(_base_models.TFTabularClassification):
         ])
 
         model.compile(
-            optimizer=keras.optimizers.Adam(0.015),
+            optimizer=keras.optimizers.Adam(0.007),
             loss=keras.losses.SparseCategoricalCrossentropy(),
             metrics=[keras.metrics.SparseCategoricalAccuracy(name='accuracy')],
         )
@@ -65,7 +65,7 @@ class SegmentAssessorDefault(SegmentDefault):
             "class_weight": {
                 # 0 score is a failure, we want to detect these
                 # currently, systems get about 95% accuracy, so 1/20 is a failure
-                0: math.log(20) / 2,
+                0: math.log(20),
                 1: 1,
             }
         }

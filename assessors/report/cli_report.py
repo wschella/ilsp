@@ -10,4 +10,5 @@ def print_simple(df: pd.DataFrame) -> None:
 
     print(metrics.classification_report(y_true, y_pred))
     print(metrics.confusion_matrix(y_true, y_pred))
+    print(f"Accuracy: {metrics.accuracy_score(y_true, y_pred)}")
     print(f"AUC: {metrics.roc_auc_score(y_true, df.asss_prediction)}")

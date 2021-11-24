@@ -98,7 +98,7 @@ def train_kfold(ctx, **kwargs):
     dataset: Dataset = dsds.load_all()
 
     base_path = Path(
-        f"artifacts/models/{args.dataset}/{args.model}/kfold_f{args.folds}_r{args.repeats}/")
+        f"artifacts/systems/{args.dataset}/{args.model}/kfold_f{args.folds}_r{args.repeats}/")
     for i, (train, test) in enumerate(dse.k_folds(dataset, args.folds)):
         for repeat in range(args.repeats):
             print(f'Fold {i+1}/{args.folds}, repeat {repeat+1}/{args.repeats}')
@@ -150,10 +150,11 @@ def train_assessor(ctx, **kwargs):
         path=args.dataset).load_all()
     supervised = _dataset.map(to_supervised)
 
-    path = Path(f"artifacts/models/{dataset_name}/{model_name}/assessor_{args.identifier}/")
+    path = Path(f"artifacts/assessors/{dataset_name}/{model_name}/{args.identifier}/")
 
     (train, test) = supervised.split_relative(-0.2)
     print(f'Train size: {len(train)}, test size: {len(test)}')
+    print(f'Training {model_def.name()}')
     model = model_def.train(train, validation=test, restore=Restore(path, args.restore))
     if args.save:
         model.save(path)

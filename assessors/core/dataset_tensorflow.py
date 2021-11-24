@@ -57,7 +57,9 @@ class CSVDatasetDescription(DatasetDescription[E, 'TFDataset']):
         self.name = name
 
     def download(self, dest: Path = None) -> None:
-        raise NotImplementedError("This should be downloaded manually")
+        if (Path("./datasets") / self.name).exists():
+            return
+        raise NotImplementedError("This should be downloaded manually (could not find existing)")
 
     def load(self) -> Dict[str, TFDataset[E]]:
         return self._load(None)

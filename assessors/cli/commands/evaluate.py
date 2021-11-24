@@ -53,7 +53,8 @@ def evaluate_assessor(ctx, **kwargs):
     # Load assessor model
     [dataset_name, model_name] = args.model.split('_')
     model_def: ModelDefinition = get_assessor_def(dataset_name, model_name)()
-    model_path = Path(f"artifacts/models/{dataset_name}/{model_name}/assessor_{args.identifier}/")
+    model_path = Path(
+        f"artifacts/assessors/{dataset_name}/{model_name}/{args.identifier}/")
     model = model_def.restore_from(model_path)
 
     # Load & mangle dataset

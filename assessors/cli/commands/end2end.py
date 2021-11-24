@@ -23,6 +23,7 @@ class End2EndArgs(CommandArguments):
     identifier: str = "k5_r1"
     save: bool = True
     download: bool = True
+    overwrite_results: bool = False
     assessor_model: str = "mnist_default"
     output_path: Path = Path("results.csv")
     folds: int = 5
@@ -39,7 +40,7 @@ class End2EndArgs(CommandArguments):
 @cli.command()
 @click.argument('dataset')
 @click.option('-b', '--base-model', default='default', help="The base model variant to train")
-@click.option('-a', '--assessor-model', default='mnist_default', help="The assessor model variant to train")
+@click.option('-a', '--assessor-model', default='mnist_default', required=True, help="The assessor model variant to train")
 @click.option('-f', '--folds', default=5, help="The number of folds to use for cross-validation")
 @click.option('-r', '--repeats', default=1, help="The number of models to train per fold")
 @click.option('-i', '--identifier', required=True, help="The identifier for the assessor")
@@ -47,6 +48,7 @@ class End2EndArgs(CommandArguments):
 @click.option('--restore-systems', default='off', help="Whether to restore base systems. Options [full, checkpoint, off]")
 @click.option('--restore-assessor', default='off', help="Whether to restore assessor model. Options [full, checkpoint, off]")
 @click.option('--save/--no-save', default=True, help="Whether to save models")
+@click.option('--overwrite-results/--no-overwrite=results', default=False, help="Whether to overwrite the results they exist on the same path")
 @click.option('--download/--no-download', default=True, help="Whether to download datasets")
 @click.pass_context
 def end2end(ctx, **kwargs):
@@ -92,15 +94,19 @@ def end2end(ctx, **kwargs):
         model=args.assessor_model,
         restore=args.restore_assessor,
         identifier=args.identifier,
-        save=args.save)
+        overwrite_results=args.overwrite_results,
+        save=args.save,
 
-    # Evaluate assessor
-    print("# Evaluating assessor")
-    print(args.output_path)
-    ctx.invoke(
-        evaluate_assessor,
-        dataset=dataset_path,
-        model=args.assessor_model,
-        identifier=args.identifier,
-        output_path=args.output_path,
-        overwrite=True)
+        # Evaluate assessor
+        evaluate=True)
+
+    # # Evaluate assessor
+    # print("# Evaluating assessor")
+    # print(args.output_path)
+    # ctx.invoke(
+    #     evaluate_assessor,
+    #     dataset=dataset_path,
+    #     model=args.assessor_model,
+    #     identifier=args.identifier,
+    #     output_path=args.output_path,
+    #     overwrite=True)

@@ -67,7 +67,11 @@ def dataset_make(ctx, **kwargs):
 
     models = []
     ds_parts = []
-    dir = Path(f"artifacts/models/{args.dataset}/{args.model}/kfold_f{args.folds}_r{args.repeats}/")
+    dir = Path(
+        f"artifacts/systems/{args.dataset}/{args.model}/kfold_f{args.folds}_r{args.repeats}/")
+    if not dir.exists():
+        click.Abort(f"Directory {dir} does not exist.")
+
     n_folds = len(list(dir.glob("*")))
 
     # TODO: Fix non batched inference
