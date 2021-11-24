@@ -103,6 +103,7 @@ class AssessorResults(Component, ResultsRefContainer):
             {AssessorROCCurve(df)}
             {AssessorPrecRecallCurve(df)}
             {AssessorCalibration(df)}
+            {AssessorClassWiseAggregation(df)}
         </div>
         '''
 
@@ -219,6 +220,16 @@ class AssessorCalibration(Component, ResultsRefContainer):
         </div>
         '''
 
+
+class AssessorClassWiseAggregation(Component, ResultsRefContainer):
+    def render(self) -> str:
+        df = self.results
+        return f'''
+        <div>
+            <h3>Class Wise Aggregation</h3>
+            {Plot(fig=plotting.plot_assessor_class_wise_aggregation(df))}
+        </div>
+        '''
 
 # ---------------
 

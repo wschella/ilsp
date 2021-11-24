@@ -1,9 +1,65 @@
+import colorsys
 from typing import *
 
 from matplotlib.figure import Figure
 import pandas as pd
 import numpy as np
+import sklearn.metrics as metrics
 import matplotlib.pyplot as plt
+
+
+def prediction_to_label(prediction) -> int:
+    return np.argmax(prediction, axis=1)[0]
+
+
+def lighten(rgb, scale):
+    # convert rgb to hls
+    h, l, s = colorsys.rgb_to_hls(*rgb[:-1])
+    # manipulate h, l, s values and return as rgb
+    return colorsys.hls_to_rgb(h, min(1, l * scale), s=s)
+
+
+def plot_assessor_class_wise_aggregation(df: pd.DataFrame) -> Figure:
+    fig, ax = plt.subplots()
+
+    asss_acc = metrics.accuracy_score(df.syst_pred_score, df.asss_prediction.map(lambda p: p > 0.5))
+    syst_acc = metrics.accuracy_score(df.inst_target, df.syst_prediction.map(prediction_to_label))
+
+    asss_class_accs = []
+    syst_class_accs = []
+    class_support = []
+    for target in np.sort(df.inst_target.unique()):
+        selected = df.loc[df.inst_target == target]
+        asss_class_accs.append(
+            metrics.accuracy_score(
+                selected.syst_pred_score,
+                selected.asss_prediction.map(lambda p: p > 0.5)))
+
+        syst_class_accs.append(
+            metrics.accuracy_score(
+                selected.inst_target,
+                selected.syst_prediction.map(prediction_to_label)))
+
+        class_support.append(len(selected))
+
+    labels = np.sort(df.inst_target.unique())
+    x = np.arange(len(labels))
+    width = 0.35
+
+    syst_bar = ax.bar(x - width / 2, syst_class_accs, width, label="System Avg.")
+    asss_bar = ax.bar(x + width / 2, asss_class_accs, width, label="Assessor")
+
+    ax.axhline(y=syst_acc, ls="dashed", lw=3, c=lighten(syst_bar.patches[0].get_facecolor(), 0.8))
+    ax.axhline(y=asss_acc, ls="dashed", lw=3, c=lighten(asss_bar.patches[0].get_facecolor(), 0.8))
+
+    ax.set_title("Class Wise Aggregation")
+    ax.set_xlabel("Class")
+    ax.set_ylabel("Accuracy")
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels)
+    ax.legend()
+
+    return fig
 
 
 class CalibrationInfo(TypedDict):
