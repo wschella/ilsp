@@ -7,6 +7,8 @@ import numpy as np
 import sklearn.metrics as metrics
 import matplotlib.pyplot as plt
 
+plt.style.use('default')
+
 
 def prediction_to_label(prediction) -> int:
     return np.argmax(prediction, axis=1)[0]
@@ -19,55 +21,61 @@ def lighten(rgb, scale):
     return colorsys.hls_to_rgb(h, min(1, l * scale), s=s)
 
 
-def plot_assessor_class_wise_aggregation(df: pd.DataFrame) -> Figure:
-    fig, ax = plt.subplots()
+def plot_acc_per_class_crisp(df: pd.DataFrame, threshold: float = 0.5) -> Figure:
+    fig, ax = plt.subplots(figsize=(9, 4))
 
     syst_acc = metrics.accuracy_score(df.inst_target, df.syst_prediction.map(prediction_to_label))
-    asss_acc = metrics.accuracy_score(df.syst_pred_score, df.asss_prediction.map(lambda p: p > 0.5))
-    asss_pred_acc = df.asss_prediction.map(lambda p: p > 0.5) / len(df)
+    syst_pred_acc = df.syst_prediction.map(lambda p: np.max(p, axis=1)[0] > threshold).mean()
+    asss_pred_acc = df.asss_prediction.map(lambda p: p > threshold).mean()
 
     syst_class_accs = []  # The times the system is correct
-    asss_class_accs = []  # The times the assessor is correct
+    syst_pred_class_accs = []  # The times the system predicts itself to be correct
     asss_pred_class_accs = []  # The times the assessor predicted the system to be correct
 
-    class_support = []
     for target in np.sort(df.inst_target.unique()):
         selected = df.loc[df.inst_target == target]
-        asss_class_accs.append(
-            metrics.accuracy_score(
-                selected.syst_pred_score,
-                selected.asss_prediction.map(lambda p: p > 0.5)))
-
-        asss_pred_class_accs.append(
-            selected.asss_prediction.map(lambda p: p > 0.5).sum() / len(selected))
-
         syst_class_accs.append(
             metrics.accuracy_score(
                 selected.inst_target,
                 selected.syst_prediction.map(prediction_to_label)))
 
-        class_support.append(len(selected))
+        syst_pred_class_accs.append(
+            selected.syst_prediction.map(lambda p: np.max(p, axis=1)[0] > threshold).mean())
+
+        asss_pred_class_accs.append(
+            selected.asss_prediction.map(lambda p: p > threshold).mean())
 
     labels = np.sort(df.inst_target.unique())
     x = np.arange(len(labels))
-    width = 0.25
+    width = 0.20
 
-    syst_acc_bar = ax.bar(x - width, syst_class_accs, width, label="System accuracy")
-    asss_acc_bar = ax.bar(x + width, asss_class_accs, width, label="Assessor accuracy")
-    asss_pred_bar = ax.bar(x, asss_pred_class_accs, width, label="Assessor predicted accuracy")
+    syst_acc_bar = ax.bar(
+        x - width * 1, syst_class_accs, width, label="System accuracy")
+    syst_pred_acc_bar = ax.bar(
+        x - width * 0.0, syst_pred_class_accs, width, label="System self predicted accuracy")
+    asss_pred_acc_bar = ax.bar(
+        x + width * 1, asss_pred_class_accs, width, label="Assessor predicted accuracy")
 
+    # Draw horizontal lines for total accuracy
     corresponding_color = lambda bar: lighten(bar.patches[0].get_facecolor(), 0.8)
 
-    # ax.axhline(y=syst_acc, ls="dashed", lw=3, c=corresponding_color(syst_acc_bar))
-    # ax.axhline(y=asss_acc, ls="dashed", lw=3, c=corresponding_color(asss_acc_bar))
-    # ax.axhline(y=asss_pred_acc, ls="dashed", lw=3, c=corresponding_color(asss_pred_bar))
+    def draw_hline(y, label, color):
+        line = ax.axhline(y, ls="dotted", lw=2, c=color, label=f"{y:.3f}")
+        return line
 
-    ax.set_title("Class Wise Aggregation")
+    l1 = draw_hline(syst_acc, f"{syst_acc}", corresponding_color(syst_acc_bar))
+    l2 = draw_hline(syst_pred_acc, f"{syst_pred_acc}", corresponding_color(syst_pred_acc_bar))
+    l3 = draw_hline(asss_pred_acc, f"{asss_pred_acc}", corresponding_color(asss_pred_acc_bar))
+
+    # Fix styling of the plot
+    # ax.set_title("Class Wise Aggregation")
     ax.set_xlabel("Class")
     ax.set_ylabel("Accuracy")
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
-    ax.legend()
+    line_legend = plt.legend(handles=[l1, l2, l3], loc="center right")
+    plt.gca().add_artist(line_legend)
+    ax.legend(loc="lower right", handles=[syst_acc_bar, syst_pred_acc_bar, asss_pred_acc_bar])
 
     return fig
 

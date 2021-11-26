@@ -103,7 +103,7 @@ class AssessorResults(Component, ResultsRefContainer):
             {AssessorROCCurve(df)}
             {AssessorPrecRecallCurve(df)}
             {AssessorCalibration(df)}
-            {AssessorClassWiseAggregation(df)}
+            {AssessorPerClassAggregation(df)}
         </div>
         '''
 
@@ -221,15 +221,19 @@ class AssessorCalibration(Component, ResultsRefContainer):
         '''
 
 
-class AssessorClassWiseAggregation(Component, ResultsRefContainer):
+class AssessorPerClassAggregation(Component, ResultsRefContainer):
     def render(self) -> str:
         df = self.results
         return f'''
         <div>
-            <h3>Class Wise Aggregation</h3>
-            <p>We report the times the assessor accuracy vs system accuracy</p>
-            <p>The system accuracy is averaged over all the systems in the population</p>
-            {Plot(fig=plotting.plot_assessor_class_wise_aggregation(df))}
+            <h3>Crisp Per-Class Aggregation</h3>
+            {Plot(fig=plotting.plot_acc_per_class_crisp(df))}
+            <p>We report the times per-class actual accuracy of the system (actually avg of the systems)
+            compared to
+                the systems self predicted accuracy by considering confidence <0.5 as predicted failure
+                the assessors predicted accuracy, by similarly considering confidence <0.5 as predicted failure
+            </p>
+            <p><strong>The system accuracy is actually averaged over all the systems in the population<strong></p>
         </div>
         '''
 
