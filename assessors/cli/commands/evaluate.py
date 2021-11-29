@@ -12,7 +12,7 @@ import sklearn.metrics as metrics
 from tqdm import tqdm
 from assessors.cli.commands.report import generate_report
 
-from assessors.core import ModelDefinition, CustomDatasetDescription, Dataset, PredictionRecord, TypedPredictionRecord, AssessorPredictionRecord
+from assessors.core import ModelDefinition, CustomDatasetDescription, Dataset, PredictionRecord, TypedPredictionRecord, AssessorPredictionRecord, LeanPredictionRecord
 from assessors.cli.shared import CommandArguments, get_assessor_def, get_dataset_description, get_model_def
 from assessors.cli.cli import cli, CLIArgs
 import assessors.report as rr
@@ -25,6 +25,7 @@ class EvaluateAssessorArgs(CommandArguments):
     output_path: Path = Path("./results.csv")
     identifier: str = "f5_r1"
     overwrite: bool = False
+    write_system_results: bool = False
     model: str = "mnist_default"
 
     def validate(self):
@@ -38,6 +39,7 @@ class EvaluateAssessorArgs(CommandArguments):
 @click.option('-o', '--output-path', default="./results.csv", type=click.Path(path_type=Path), help="The output path")
 @click.option('-i', '--identifier', required=True, help="The identifier of the assessor")
 @click.option('--overwrite', is_flag=True, help="Overwrite the output file if it exists", default=False)
+@click.option('--write-system-results', is_flag=True, help="Also write the system results to the output file (without inst_features)", default=False)
 @click.option('-m', '--model', default='mnist_default', help="The model to evaluate")
 @click.pass_context
 def evaluate_assessor(ctx, **kwargs):
@@ -75,7 +77,8 @@ def evaluate_assessor(ctx, **kwargs):
         test_as_numpy: Sequence[TypedPredictionRecord] = test.as_numpy_sequence()
 
         print("Writing results. No idea yet why this is slow.")
-        for record, asss_pred in tqdm(zip(test_as_numpy, asss_predictions), total=len(test)):
+        for _record, asss_pred in tqdm(zip(test_as_numpy, asss_predictions), total=len(test)):
+            record: TypedPredictionRecord = _record
             asss_record = AssessorPredictionRecord(
                 inst_index=record['inst_index'],
                 inst_target=record['inst_target'],
@@ -88,6 +91,21 @@ def evaluate_assessor(ctx, **kwargs):
             )
             writer.writerow(asss_record)
     print(f"Wrote results to {args.output_path}")
+
+    if args.write_system_results:
+        with open(args.output_path.with_name("system_results.csv"), "w") as f:
+            fieldnames = list(LeanPredictionRecord.__annotations__.keys())
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+
+            train_as_numpy: Sequence[TypedPredictionRecord] = _train.as_numpy_sequence()
+            print("Writing _system_ results")
+            for _record in tqdm(train_as_numpy, total=len(test)):
+                record: TypedPredictionRecord = _record
+                record.pop('inst_features')  # Make it a LeanPredictionRecord
+                record['syst_features'] = record['syst_features'].tolist()
+                record['syst_prediction'] = record['syst_prediction'].tolist()
+                writer.writerow(record)
 
     # Print some simple results
     ctx.invoke(

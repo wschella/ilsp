@@ -162,9 +162,18 @@ class AssessorROCCurve(Component, ResultsRefContainer):
     def render(self) -> str:
         df = self.results
         roc = metrics.RocCurveDisplay.from_predictions(
+            name="assessor",
             y_true=df.syst_pred_score,
             y_pred=df.asss_prediction,
         )
+        for syst_id in sorted(df.syst_features.unique()):
+            selected = df.loc[df.syst_features == syst_id]
+            metrics.RocCurveDisplay.from_predictions(
+                name=syst_id,
+                y_true=selected.syst_pred_score,
+                y_pred=selected.syst_prediction.map(lambda p: np.max(p, axis=1)[0]),
+                ax=roc.ax_,
+            )
         return f'''
         <div>
             <h3>Assessor ROC Curve</h3>
