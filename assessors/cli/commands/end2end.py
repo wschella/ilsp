@@ -51,12 +51,6 @@ class End2EndArgs(CommandArguments):
 @click.option('--download/--no-download', default=True, help="Whether to download datasets")
 @click.pass_context
 def end2end(ctx, **kwargs):
-    """
-    Train the baseline model for DATASET.
-    Options are:
-        - mnist
-        - cifar10
-    """
     args = End2EndArgs(parent=ctx.obj, **kwargs).validated()
 
     # Download and prepare relevant dataset
