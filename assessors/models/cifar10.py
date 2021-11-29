@@ -35,7 +35,7 @@ class CIFAR10Default(_base_models.TFImageClassification):
 
 class CIFAR10AssessorDefault(CIFAR10Default):
     def name(self) -> str:
-        return "cifar10_assessor_default"
+        return "cifar10_default_assessor"
 
     def definition(self):
         model = keras.models.Sequential()
@@ -93,6 +93,9 @@ class CIFAR10Wide(_base_models.TFImageClassification):
 class CIFAR10AssessorWide(CIFAR10Wide):
     epochs = 25
     num_classes = 2
+
+    def name(self) -> str:
+        return "cifar10_wide_assessor"
 
     def definition(self, compiled: bool = True):
         definition = wide_resnet(

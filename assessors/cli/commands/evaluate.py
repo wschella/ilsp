@@ -13,7 +13,7 @@ from tqdm import tqdm
 from assessors.cli.commands.report import generate_report
 
 from assessors.core import ModelDefinition, CustomDatasetDescription, Dataset, PredictionRecord, TypedPredictionRecord, AssessorPredictionRecord, LeanPredictionRecord
-from assessors.cli.shared import CommandArguments, get_assessor_def, get_dataset_description, get_model_def
+from assessors.cli.shared import CommandArguments, AssessorHub, SystemHub, DatasetHub
 from assessors.cli.cli import cli, CLIArgs
 import assessors.report as rr
 
@@ -21,21 +21,23 @@ import assessors.report as rr
 @dataclass
 class EvaluateAssessorArgs(CommandArguments):
     dataset: Path
+    dataset_name: str = "mnist"
     parent: CLIArgs = CLIArgs()
     output_path: Path = Path("./results.csv")
     identifier: str = "f5_r1"
     overwrite: bool = False
     write_system_results: bool = False
-    model: str = "mnist_default"
+    model: str = "default"
 
     def validate(self):
         self.parent.validate()
-        self.validate_option('model', ["mnist_default", "mnist_prob",
-                             "cifar10_default", "segment_default"])
+        self.validate_option('dataset_name', DatasetHub.options())
+        self.validate_option('model', AssessorHub.options_for(self.dataset_name))
 
 
 @cli.command(name='eval-assessor')
 @click.argument('dataset', type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.option('-d', '--dataset-name', required=True, help="The name of the source dataset")
 @click.option('-o', '--output-path', default="./results.csv", type=click.Path(path_type=Path), help="The output path")
 @click.option('-i', '--identifier', required=True, help="The identifier of the assessor")
 @click.option('--overwrite', is_flag=True, help="Overwrite the output file if it exists", default=False)
@@ -53,10 +55,9 @@ def evaluate_assessor(ctx, **kwargs):
         click.confirm(f"The file {args.output_path} already exists. Overwrite?", abort=True)
 
     # Load assessor model
-    [dataset_name, model_name] = args.model.split('_')
-    model_def: ModelDefinition = get_assessor_def(dataset_name, model_name)()
+    model_def: ModelDefinition = AssessorHub.get(args.dataset_name, args.model)()
     model_path = Path(
-        f"artifacts/assessors/{dataset_name}/{model_name}/{args.identifier}/")
+        f"artifacts/assessors/{args.dataset_name}/{args.model}/{args.identifier}/")
     model = model_def.restore_from(model_path)
 
     # Load & mangle dataset
@@ -126,6 +127,8 @@ class EvaluateSystemArgs(CommandArguments):
 
     def validate(self):
         self.parent.validate()
+        self.validate_option('dataset', DatasetHub.options())
+        self.validate_option('model', SystemHub.options_for(self.dataset))
 
 
 @cli.command(name='eval-system')
@@ -137,13 +140,13 @@ def evaluate_system(ctx, **kwargs):
     args = EvaluateSystemArgs(parent=ctx.obj, **kwargs).validated()
 
     # Load system
-    model_def: ModelDefinition = get_model_def(args.dataset, args.model)()
+    model_def: ModelDefinition = SystemHub.get(args.dataset, args.model)()
     # TODO: Fix
     model_path = Path(f"artifacts/models/{args.dataset}/{args.model}/kfold_5/4")
     model = model_def.restore_from(model_path)
 
     # Load & mangle dataset
-    _ds: Dataset = get_dataset_description(args.dataset).load_all()
+    _ds: Dataset = DatasetHub.get(args.dataset).load_all()
     (_train, test) = _ds.split_relative(-0.2)
 
     y_true = test.map(lambda e: e[1]).as_numpy()

@@ -6,7 +6,7 @@ import click
 
 from assessors.utils import dataset_extra as dse
 from assessors.core import ModelDefinition, Restore, Dataset, PredictionRecord, DatasetDescription, CustomDatasetDescription
-from assessors.cli.shared import CommandArguments, get_dataset_description, get_model_def, get_assessor_def
+from assessors.cli.shared import CommandArguments, DatasetHub, AssessorHub, SystemHub
 from assessors.cli.cli import cli, CLIArgs
 from assessors.cli.commands.evaluate import evaluate_assessor
 
@@ -49,11 +49,11 @@ def train_base(ctx, **kwargs):
     """
     args = TrainBaseArgs(parent=ctx.obj, **kwargs).validated()
 
-    dsds: DatasetDescription = get_dataset_description(args.dataset)
+    dsds: DatasetDescription = DatasetHub.get(args.dataset)
     dataset: Dataset = dsds.load_all()
 
     path = Path(f"artifacts/models/{args.dataset}/{args.model}/base/")
-    model_def: ModelDefinition = get_model_def(args.dataset, args.model)()
+    model_def: ModelDefinition = SystemHub.get(args.dataset, args.model)()
 
     (train, test) = dataset.split_relative(-0.2)
     print(f'Train size: {len(train)}, test size: {len(test)}')
@@ -92,9 +92,9 @@ def train_kfold(ctx, **kwargs):
     """
     args = TrainKFoldArgs(parent=ctx.obj, **kwargs).validated()
 
-    model_def: ModelDefinition = get_model_def(args.dataset, args.model)()
+    model_def: ModelDefinition = SystemHub.get(args.dataset, args.model)()
 
-    dsds: DatasetDescription = get_dataset_description(args.dataset)
+    dsds: DatasetDescription = DatasetHub.get(args.dataset)
     dataset: Dataset = dsds.load_all()
 
     base_path = Path(
@@ -113,7 +113,8 @@ def train_kfold(ctx, **kwargs):
 @dataclass
 class TrainAssessorArgs(TrainArgs):
     dataset: Path = Path("artifacts/datasets/mnist/kfold/")
-    model: str = "mnist_default"
+    dataset_name: str = "mnist"
+    model: str = "default"
     identifier: str = "k5_r1"
     save: bool = True
     evaluate: bool = True
@@ -121,12 +122,13 @@ class TrainAssessorArgs(TrainArgs):
 
     def validate(self):
         super().validate()
-        self.validate_option('model', ["mnist_default", "mnist_prob",
-                             "cifar10_default", "segment_default"])
+        self.validate_option('dataset_name', DatasetHub.options())
+        self.validate_option('model', AssessorHub.options_for(self.dataset_name))
 
 
 @cli.command(name='train-assessor')
 @click.argument('dataset', type=click.Path(exists=True, path_type=Path))
+@click.option('-d', '--dataset-name', required=True, help="The name of the source dataset")
 @click.option('-m', '--model', required=True, help="The model variant to train.")
 @click.option('-i', '--identifier', required=True, help="The identifier of assessor (for saving path).")
 @click.option("-r", "--restore", default="full", show_default=True, help="Wether to restore the assessor if possible. Options [full, checkpoint, off]")
@@ -139,9 +141,7 @@ def train_assessor(ctx, **kwargs):
     Train the assessor model for dataset at DATASET.
     """
     args = TrainAssessorArgs(parent=ctx.obj, **kwargs).validated()
-
-    [dataset_name, model_name] = args.model.split('_')
-    model_def: ModelDefinition = get_assessor_def(dataset_name, model_name)()
+    model_def: ModelDefinition = AssessorHub.get(args.dataset_name, args.model)()
 
     def to_supervised(record: PredictionRecord):
         return (record['inst_features'], record['syst_pred_score'])
@@ -150,7 +150,7 @@ def train_assessor(ctx, **kwargs):
         path=args.dataset).load_all()
     supervised = _dataset.map(to_supervised)
 
-    path = Path(f"artifacts/assessors/{dataset_name}/{model_name}/{args.identifier}/")
+    path = Path(f"artifacts/assessors/{args.dataset_name}/{args.model}/{args.identifier}/")
 
     (train, test) = supervised.split_relative(-0.2)
     print(f'Train size: {len(train)}, test size: {len(test)}')
@@ -162,6 +162,7 @@ def train_assessor(ctx, **kwargs):
     ctx.invoke(
         evaluate_assessor,
         dataset=args.dataset,
+        dataset_name=args.dataset_name,
         model=args.model,
         identifier=args.identifier,
         overwrite=args.overwrite_results)

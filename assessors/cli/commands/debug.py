@@ -21,7 +21,7 @@ def peek_dataset(path: Path, without_fields: List[str]) -> None:
             return entry
         ds = ds.map(lambda x: filter_fields(x))
 
-    head = next(ds.take(1).as_numpy_iterator())
+    head = next(ds.take(1).as_numpy_sequence())  # type: ignore
     print(head)
 
 

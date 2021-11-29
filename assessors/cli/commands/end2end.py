@@ -5,7 +5,7 @@ from pathlib import Path
 import click
 
 from assessors.core import Restore
-from assessors.cli.shared import CommandArguments
+from assessors.cli.shared import CommandArguments, DatasetHub, AssessorHub, SystemHub
 from assessors.cli.cli import cli, CLIArgs
 
 from assessors.cli.commands.dataset import dataset_download, dataset_make
@@ -24,23 +24,22 @@ class End2EndArgs(CommandArguments):
     save: bool = True
     download: bool = True
     overwrite_results: bool = False
-    assessor_model: str = "mnist_default"
+    assessor_model: str = "default"
     output_path: Path = Path("results.csv")
     folds: int = 5
     repeats: int = 1
 
     def validate(self):
         self.parent.validate()
-        self.validate_option('dataset', ["mnist", "cifar10", "segment"])
-        self.validate_option('base_model', ["default"])
-        self.validate_option('assessor_model', [
-                             "mnist_default", "mnist_prob", "cifar10_default", "segment_default"])
+        self.validate_option('dataset', DatasetHub.options())
+        self.validate_option('base_model', SystemHub.options_for(self.dataset))
+        self.validate_option('assessor_model', AssessorHub.options_for(self.dataset))
 
 
 @cli.command()
 @click.argument('dataset')
 @click.option('-b', '--base-model', default='default', help="The base model variant to train")
-@click.option('-a', '--assessor-model', default='mnist_default', required=True, help="The assessor model variant to train")
+@click.option('-a', '--assessor-model', default='default', required=True, help="The assessor model variant to train")
 @click.option('-f', '--folds', default=5, help="The number of folds to use for cross-validation")
 @click.option('-r', '--repeats', default=1, help="The number of models to train per fold")
 @click.option('-i', '--identifier', required=True, help="The identifier for the assessor")
@@ -91,6 +90,7 @@ def end2end(ctx, **kwargs):
     ctx.invoke(
         train_assessor,
         dataset=dataset_path,
+        dataset_name=args.dataset,
         model=args.assessor_model,
         restore=args.restore_assessor,
         identifier=args.identifier,

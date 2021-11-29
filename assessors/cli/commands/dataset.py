@@ -7,7 +7,7 @@ import click
 from assessors.core import ModelDefinition, PredictionRecord
 from assessors.core import Dataset, DatasetDescription
 from assessors.utils import dataset_extra as dse
-from assessors.cli.shared import CommandArguments, get_dataset_description, get_model_def
+from assessors.cli.shared import CommandArguments, SystemHub, DatasetHub
 from assessors.cli.cli import cli, CLIArgs
 
 
@@ -29,7 +29,7 @@ def dataset_download(ctx, **kwargs):
     See https://www.tensorflow.org/datasets/catalog/overview for an overview of options.
     """
     args = DownloadArgs(parent=ctx.obj, **kwargs).validated()
-    dataset: DatasetDescription = get_dataset_description(args.name)
+    dataset: DatasetDescription = DatasetHub.get(args.name)
     dataset.download()
 
 
@@ -43,8 +43,8 @@ class MakeKFoldArgs(CommandArguments):
 
     def validate(self):
         self.parent.validate()
-        self.validate_option('dataset', ["mnist", "cifar10", "segment"])
-        self.validate_option('model', ["default"])
+        self.validate_option('dataset', DatasetHub.options())
+        self.validate_option('model', SystemHub.options_for(self.dataset))
 
 
 @cli.command('dataset-make')
@@ -59,8 +59,8 @@ def dataset_make(ctx, **kwargs):
     """
     args = MakeKFoldArgs(parent=ctx.obj, **kwargs).validated()
 
-    model_def: ModelDefinition = get_model_def(args.dataset, args.model)()
-    dataset_desc: DatasetDescription = get_dataset_description(args.dataset)
+    model_def: ModelDefinition = SystemHub.get(args.dataset, args.model)()
+    dataset_desc: DatasetDescription = DatasetHub.get(args.dataset)
 
     dataset: Dataset = dataset_desc.load_all()
     dataset = dataset.map(lambda e: {'features': e[0], 'target': e[1]}).enumerate_dict()

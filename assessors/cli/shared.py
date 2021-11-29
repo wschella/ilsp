@@ -5,36 +5,78 @@ import assessors.models as models
 from assessors.core import ModelDefinition, TFDatasetDescription, DatasetDescription, CSVDatasetDescription
 
 
-def get_model_def(dataset, model_name) -> type[ModelDefinition]:
-    model: type[ModelDefinition] = {  # type: ignore
-        'mnist': models.MNISTDefault,
-        'cifar10': models.CIFAR10Default,
-        'segment': models.SegmentDefault,
-    }[dataset]
-    return model
+class SystemHub():
+    systems: Dict[str, Dict[str, Type[ModelDefinition]]] = {
+        'mnist': {
+            "default": models.MNISTDefault,
+        },
+        'cifar10': {
+            "default": models.CIFAR10Default,
+            "wide": models.CIFAR10Wide,
+        },
+        'segment': {
+            "default": models.SegmentDefault,
+        },
+    }
+
+    @staticmethod
+    def get(dataset: str, model: str) -> Type[ModelDefinition]:
+        return SystemHub.systems[dataset][model]
+
+    @staticmethod
+    def exists(dataset: str, model: str) -> bool:
+        return dataset in SystemHub.systems and model in SystemHub.systems[dataset]
+
+    @staticmethod
+    def options_for(dataset) -> List[str]:
+        return list(SystemHub.systems[dataset].keys())
 
 
-def get_assessor_def(dataset, model_name) -> type[ModelDefinition]:
-    model: type[ModelDefinition] = {  # type: ignore
+class AssessorHub():
+    assessors: Dict[str, Dict[str, Type[ModelDefinition]]] = {
         'mnist': {
             "default": models.MNISTAssessorDefault,
         },
         'cifar10': {
             "default": models.CIFAR10AssessorDefault,
+            "wide": models.CIFAR10AssessorWide,
         },
         'segment': {
-            "default": models.SegmentAssessorDefault,
-        }
-    }[dataset][model_name]
-    return model
+            "default": models.SegmentAssessorDefault
+        },
+    }
+
+    @staticmethod
+    def get(dataset: str, model: str) -> Type[ModelDefinition]:
+        return AssessorHub.assessors[dataset][model]
+
+    @staticmethod
+    def exists(dataset: str, model: str) -> bool:
+        return dataset in AssessorHub.assessors and model in AssessorHub.assessors[dataset]
+
+    @staticmethod
+    def options_for(dataset) -> List[str]:
+        return list(AssessorHub.assessors[dataset].keys())
 
 
-def get_dataset_description(dataset) -> DatasetDescription:
-    return {
+class DatasetHub():
+    datasets: Dict[str, DatasetDescription] = {
         'mnist': TFDatasetDescription('mnist'),
         'cifar10': TFDatasetDescription('cifar10'),
         'segment': CSVDatasetDescription('segment_brodley.csv'),
-    }[dataset]
+    }
+
+    @staticmethod
+    def get(name: str) -> DatasetDescription:
+        return DatasetHub.datasets[name]
+
+    @staticmethod
+    def options() -> List[str]:
+        return list(DatasetHub.datasets.keys())
+
+    @staticmethod
+    def exists(name: str) -> bool:
+        return name in DatasetHub.datasets
 
 
 class CommandArguments(ABC):
