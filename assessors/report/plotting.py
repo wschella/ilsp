@@ -21,51 +21,52 @@ def lighten(rgb, scale):
     return colorsys.hls_to_rgb(h, min(1, l * scale), s=s)
 
 
-def plot_acc_per_class_crisp(df: pd.DataFrame, threshold: float = 0.5) -> Figure:
+class AccPerClass(TypedDict):
+    # TODO: Add Anify type generic type
+    syst_acc: Union[float, Any]       # The times the system is correct
+    syst_pred_acc: Union[float, Any]  # The times the system predicts itself to be correct
+    asss_pred_acc: Union[float, Any]  # The times the assessor predicts the system to be correct
+    support: int
+    syst_class_accs: Union[List[float], Any]
+    syst_pred_class_accs: List[float]
+    asss_pred_class_accs: List[float]
+    class_supports: List[int]
+
+
+def _plot_acc_per_class(data: AccPerClass, labels: List[str]) -> Figure:
     fig, ax = plt.subplots(figsize=(9, 4))
 
-    syst_acc = metrics.accuracy_score(df.inst_target, df.syst_prediction.map(prediction_to_label))
-    syst_pred_acc = df.syst_prediction.map(lambda p: np.max(p, axis=1)[0] > threshold).mean()
-    asss_pred_acc = df.asss_prediction.map(lambda p: p > threshold).mean()
-
-    syst_class_accs = []  # The times the system is correct
-    syst_pred_class_accs = []  # The times the system predicts itself to be correct
-    asss_pred_class_accs = []  # The times the assessor predicted the system to be correct
-
-    for target in np.sort(df.inst_target.unique()):
-        selected = df.loc[df.inst_target == target]
-        syst_class_accs.append(
-            metrics.accuracy_score(
-                selected.inst_target,
-                selected.syst_prediction.map(prediction_to_label)))
-
-        syst_pred_class_accs.append(
-            selected.syst_prediction.map(lambda p: np.max(p, axis=1)[0] > threshold).mean())
-
-        asss_pred_class_accs.append(
-            selected.asss_prediction.map(lambda p: p > threshold).mean())
-
-    labels = np.sort(df.inst_target.unique())
     x = np.arange(len(labels))
     width = 0.20
 
+    # Plot bars
     syst_acc_bar = ax.bar(
-        x - width * 1, syst_class_accs, width, label="System accuracy")
+        x - width * 1,
+        data['syst_class_accs'],
+        width,
+        label="System accuracy"
+    )
     syst_pred_acc_bar = ax.bar(
-        x - width * 0.0, syst_pred_class_accs, width, label="System self predicted accuracy")
+        x - width * 0.0,
+        data['syst_pred_class_accs'],
+        width,
+        label="System self predicted accuracy")
     asss_pred_acc_bar = ax.bar(
-        x + width * 1, asss_pred_class_accs, width, label="Assessor predicted accuracy")
+        x + width * 1,
+        data['asss_pred_class_accs'],
+        width,
+        label="Assessor predicted accuracy")
 
     # Draw horizontal lines for total accuracy
     corresponding_color = lambda bar: lighten(bar.patches[0].get_facecolor(), 0.8)
 
-    def draw_hline(y, label, color):
+    def draw_hline(y, color):
         line = ax.axhline(y, ls="dotted", lw=2, c=color, label=f"{y:.3f}")
         return line
 
-    l1 = draw_hline(syst_acc, f"{syst_acc}", corresponding_color(syst_acc_bar))
-    l2 = draw_hline(syst_pred_acc, f"{syst_pred_acc}", corresponding_color(syst_pred_acc_bar))
-    l3 = draw_hline(asss_pred_acc, f"{asss_pred_acc}", corresponding_color(asss_pred_acc_bar))
+    l1 = draw_hline(data['syst_acc'], corresponding_color(syst_acc_bar))
+    l2 = draw_hline(data['syst_pred_acc'], corresponding_color(syst_pred_acc_bar))
+    l3 = draw_hline(data['asss_pred_acc'], corresponding_color(asss_pred_acc_bar))
 
     # Fix styling of the plot
     # ax.set_title("Class Wise Aggregation")
@@ -78,6 +79,48 @@ def plot_acc_per_class_crisp(df: pd.DataFrame, threshold: float = 0.5) -> Figure
     ax.legend(loc="lower right", handles=[syst_acc_bar, syst_pred_acc_bar, asss_pred_acc_bar])
 
     return fig
+
+
+def plot_acc_per_class(df: pd.DataFrame, crisp_threshold: Optional[float] = None) -> Figure:
+    labels = np.sort(df.inst_target.unique())
+
+    # df = df.where(df.syst_features == "[0, 0]")
+    # assert len(df) > 0
+
+    # Metrics & helpers
+    conf = lambda preds: preds.map(lambda p: np.max(p, axis=1)[0])
+    actual_acc = lambda df: metrics.accuracy_score(
+        df.inst_target, df.syst_prediction.map(prediction_to_label))
+    predicted_acc_crisp = lambda preds: preds.map(lambda p: p > crisp_threshold).mean()
+    predicted_acc_prob = lambda preds: preds.mean()
+    predicted_acc = lambda preds: \
+        predicted_acc_crisp(preds) if crisp_threshold is not None \
+        else predicted_acc_prob(preds)
+
+    # Total accuracy and predicted accuracy
+    syst_acc = actual_acc(df)
+    syst_pred_acc = predicted_acc(conf(df.syst_prediction))
+    asss_pred_acc = predicted_acc(df.asss_prediction)
+
+    # Per class accuracies and predicted accuracies
+    class_dfs = [df.loc[df.inst_target == target] for target in labels]
+    syst_class_accs = [actual_acc(df) for df in class_dfs]
+    syst_pred_class_accs = [predicted_acc(conf(df.syst_prediction)) for df in class_dfs]
+    asss_pred_class_accs = [predicted_acc(df.asss_prediction) for df in class_dfs]
+
+    return _plot_acc_per_class(
+        data={
+            "syst_acc": syst_acc,
+            "syst_pred_acc": syst_pred_acc,
+            "asss_pred_acc": asss_pred_acc,
+            "support": len(df),
+            "syst_class_accs": syst_class_accs,
+            "syst_pred_class_accs": syst_pred_class_accs,
+            "asss_pred_class_accs": asss_pred_class_accs,
+            "class_supports": df.inst_target.groupby(df.inst_target).count(),
+        },
+        labels=labels,
+    )
 
 
 class CalibrationInfo(TypedDict):

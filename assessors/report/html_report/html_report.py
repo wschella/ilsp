@@ -226,8 +226,11 @@ class AssessorPerClassAggregation(Component, ResultsRefContainer):
         df = self.results
         return f'''
         <div>
+            <h3>Soft Per-Class Aggregation</h3>
+            {Plot(fig=plotting.plot_acc_per_class(df))}
+
             <h3>Crisp Per-Class Aggregation</h3>
-            {Plot(fig=plotting.plot_acc_per_class_crisp(df))}
+            {Plot(fig=plotting.plot_acc_per_class(df, crisp_threshold=0.5))}
             <p>We report the times per-class actual accuracy of the system (actually avg of the systems)
             compared to
                 the systems self predicted accuracy by considering confidence <0.5 as predicted failure
