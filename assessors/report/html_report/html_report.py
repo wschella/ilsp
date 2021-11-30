@@ -138,8 +138,8 @@ class AssessorMetrics(Component, ResultsRefContainer):
 class AssessorBrier(Component, ResultsRefContainer):
     def render(self) -> str:
         df = self.results
-        systems = sorted(df.syst_features.unique())
-        per_system = [df.loc[df.syst_features == system] for system in systems]
+        systems = sorted(df.syst_id.unique())
+        per_system = [df.loc[df.syst_id == system] for system in systems]
 
         conf = lambda pred: np.max(pred, axis=1)[0]
 
@@ -200,8 +200,8 @@ class AssessorROCCurve(Component, ResultsRefContainer):
             y_true=df.syst_pred_score,
             y_pred=df.asss_prediction,
         )
-        for syst_id in sorted(df.syst_features.unique()):
-            selected = df.loc[df.syst_features == syst_id]
+        for syst_id in sorted(df.syst_id.unique()):
+            selected = df.loc[df.syst_id == syst_id]
             metrics.RocCurveDisplay.from_predictions(
                 name=syst_id,
                 y_true=selected.syst_pred_score,

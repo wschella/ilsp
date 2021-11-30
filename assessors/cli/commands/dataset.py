@@ -86,6 +86,7 @@ def dataset_make(ctx, **kwargs):
             # prematurely deletes it.
             # https://github.com/OpenNMT/OpenNMT-tf/pull/842
             models.append(model)
+            model_id = (i + 1) * (repeat + 1)
 
             def to_prediction_record(entry) -> PredictionRecord:
                 x, y_true = entry['features'], entry['target']
@@ -94,7 +95,8 @@ def dataset_make(ctx, **kwargs):
                     inst_index=entry['index'],
                     inst_features=entry['features'],
                     inst_target=entry['target'],
-                    syst_features=test.encode([i, repeat]),
+                    syst_id=test.encode(model_id),
+                    syst_features=test.encode([]),
                     syst_prediction=y_pred,
                     syst_pred_loss=model.loss(y_true, y_pred),
                     syst_pred_score=model.score(y_true, y_pred),

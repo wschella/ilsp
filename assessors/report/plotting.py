@@ -24,8 +24,8 @@ def lighten(rgb, scale):
 
 
 def plot_acc_per_class_all(df: pd.DataFrame, crisp_threshold: Optional[float] = None) -> Figure:
-    system_ids = sorted(df.syst_features.unique())
-    labels = np.sort(df.inst_target.unique())
+    system_ids = sorted(df.syst_id.unique())
+    labels = sorted(df.inst_target.unique())
 
     n_systems = len(system_ids)
     n_cols = 2
@@ -33,7 +33,7 @@ def plot_acc_per_class_all(df: pd.DataFrame, crisp_threshold: Optional[float] = 
 
     fig, ax = plt.subplots(ncols=n_cols, nrows=n_rows, figsize=(12, 4 * n_rows))
     for i, system_id in enumerate(system_ids):
-        system_df = df.loc[df.syst_features == system_id]
+        system_df = df.loc[df.syst_id == system_id]
         data = calc_acc_per_class(system_df, labels, crisp_threshold)
         system_ax = ax[i // n_cols, i % n_cols]
         _plot_acc_per_class(system_ax, data, labels)
@@ -50,7 +50,7 @@ def plot_acc_per_class_all(df: pd.DataFrame, crisp_threshold: Optional[float] = 
 def plot_acc_per_class_single(df: pd.DataFrame, crisp_threshold: Optional[float] = None) -> Figure:
     fig, ax = plt.subplots(figsize=(9, 4))
     data = calc_acc_per_class(df, crisp_threshold)
-    _plot_acc_per_class(ax, data, np.sort(df.inst_target.unique()))
+    _plot_acc_per_class(ax, data, sorted(df.inst_target.unique()))
     return fig
 
 

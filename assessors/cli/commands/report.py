@@ -62,6 +62,7 @@ class ReportRegenArgs(CommandArguments):
 
 
 @cli.command(name='report-regen')
+@click.option('-r', '--results', default=None, type=click.Path(exists=True, path_type=Path), help="The results file to use")
 @click.pass_context
 def regen_report(ctx, **kwargs):
     args = ReportRegenArgs(parent=ctx.obj, **kwargs).validated()

@@ -42,7 +42,7 @@ class EvaluateAssessorArgs(CommandArguments):
 @click.option('-i', '--identifier', required=True, help="The identifier of the assessor")
 @click.option('--overwrite', is_flag=True, help="Overwrite the output file if it exists", default=False)
 @click.option('--write-system-results', is_flag=True, help="Also write the system results to the output file (without inst_features)", default=False)
-@click.option('-m', '--model', default='mnist_default', help="The model to evaluate")
+@click.option('-m', '--model', default='default', help="The model to evaluate")
 @click.pass_context
 def evaluate_assessor(ctx, **kwargs):
     """
@@ -83,6 +83,7 @@ def evaluate_assessor(ctx, **kwargs):
             asss_record = AssessorPredictionRecord(
                 inst_index=record['inst_index'],
                 inst_target=record['inst_target'],
+                syst_id=record['syst_id'],
                 syst_features=record['syst_features'].tolist(),
                 syst_prediction=record['syst_prediction'].tolist(),
                 syst_pred_score=record['syst_pred_score'],

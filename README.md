@@ -7,6 +7,8 @@ Another option is invoking Python directly `python -m assessors.main --help`
 
 ### Example
 
+TODO: Outdated
+
 ```shell
 poe run dataset-download mnist
 poe run train-kfold mnist -m default
