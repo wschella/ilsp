@@ -113,7 +113,6 @@ class AssessorMetrics(Component, ResultsRefContainer):
         df = self.results
 
         n_predictions = df.shape[0]
-        brier = metrics.brier_score_loss(df.syst_pred_score, df.asss_prediction)
 
         def mispredictions(threshold: float) -> str:
             pred = df.asss_prediction.map(threshold_prediction(threshold))
@@ -128,10 +127,45 @@ class AssessorMetrics(Component, ResultsRefContainer):
         return f'''
         <div>
             <h3>Scalar Metrics</h3>
-            <p>Brier Score: {brier}     vs    TODO</p>
             <ul>
                 {"".join([mispredictions(threshold) for threshold in [0.5, 0.75, 0.9]])}
             </ul>
+            {AssessorBrier(df)}
+        </div>
+        '''
+
+
+class AssessorBrier(Component, ResultsRefContainer):
+    def render(self) -> str:
+        df = self.results
+        systems = sorted(df.syst_features.unique())
+        per_system = [df.loc[df.syst_features == system] for system in systems]
+
+        conf = lambda pred: np.max(pred, axis=1)[0]
+
+        brier = pd.DataFrame()
+        brier['system_id'] = systems
+        brier['assessor'] = [metrics.brier_score_loss(df.syst_pred_score, df.asss_prediction)
+                             for df in per_system]
+        brier['system'] = [metrics.brier_score_loss(df.syst_pred_score, df.syst_prediction.map(conf))
+                           for df in per_system]
+        brier['baseline_no_refinement'] = [metrics.brier_score_loss(
+            df.syst_pred_score,
+            len(df) * [df.syst_pred_score.mean()])
+            for df in per_system]
+
+        brier = brier.append({
+            'system_id': 'all',
+            'system': metrics.brier_score_loss(df.syst_pred_score, df.syst_prediction.map(conf)),
+            'assessor': metrics.brier_score_loss(df.syst_pred_score, df.asss_prediction),
+            'baseline_no_refinement': metrics.brier_score_loss(
+                df.syst_pred_score, len(df) * [df.syst_pred_score.mean()])
+        }, ignore_index=True)
+
+        return f'''
+        <div>
+            <h4>Brier Score</h4>
+            {brier.to_html()}
         </div>
         '''
 

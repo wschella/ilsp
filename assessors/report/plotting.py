@@ -70,7 +70,7 @@ def calc_acc_per_class(df: pd.DataFrame, labels, crisp_threshold: Optional[float
     assert len(df) > 0
 
     # Metrics & helpers
-    conf = lambda preds: preds.map(lambda p: np.max(p, axis=1)[0])
+    conf = lambda pred: np.max(pred, axis=1)[0]
     actual_acc = lambda df: metrics.accuracy_score(
         df.inst_target, df.syst_prediction.map(prediction_to_label))
     predicted_acc_crisp = lambda preds: preds.map(lambda p: p > crisp_threshold).mean()
@@ -81,13 +81,13 @@ def calc_acc_per_class(df: pd.DataFrame, labels, crisp_threshold: Optional[float
 
     # Total accuracy and predicted accuracy
     syst_acc = actual_acc(df)
-    syst_pred_acc = predicted_acc(conf(df.syst_prediction))
+    syst_pred_acc = predicted_acc(df.syst_prediction.map(conf))
     asss_pred_acc = predicted_acc(df.asss_prediction)
 
     # Per class accuracies and predicted accuracies
     class_dfs = [df.loc[df.inst_target == target] for target in labels]
     syst_class_accs = [actual_acc(df) for df in class_dfs]
-    syst_pred_class_accs = [predicted_acc(conf(df.syst_prediction)) for df in class_dfs]
+    syst_pred_class_accs = [predicted_acc(df.syst_prediction.map(conf)) for df in class_dfs]
     asss_pred_class_accs = [predicted_acc(df.asss_prediction) for df in class_dfs]
 
     return {
@@ -166,8 +166,8 @@ def assessor_calibration_info(df: pd.DataFrame, n_bins: int = 10) -> Dict[str, A
     y_true = df.syst_pred_score
     y_pred = probabilities.map(lambda p: p[0] > 0.5)
 
-    bins = np.linspace(0.0, 1.0, n_bins + 1)
-    indices = np.digitize(probabilities, bins, right=True)
+    _bins = np.linspace(0.0, 1.0, n_bins + 1)
+    indices = np.digitize(probabilities, _bins, right=True)
 
     bins = []
     for b in range(n_bins):
