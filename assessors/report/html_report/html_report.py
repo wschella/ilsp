@@ -103,7 +103,7 @@ class AssessorResults(Component, ResultsRefContainer):
             {AssessorROCCurve(df)}
             {AssessorPrecRecallCurve(df)}
             {AssessorCalibration(df)}
-            {AssessorPerClassAggregation(df)}
+            {AssessorPerClassFailureQuantification(df)}
         </div>
         '''
 
@@ -264,16 +264,19 @@ class AssessorCalibration(Component, ResultsRefContainer):
         '''
 
 
-class AssessorPerClassAggregation(Component, ResultsRefContainer):
+class AssessorPerClassFailureQuantification(Component, ResultsRefContainer):
     def render(self) -> str:
         df = self.results
         return f'''
         <div>
-            <h3>Soft Per-Class Aggregation</h3>
-            {Plot(fig=plotting.plot_acc_per_class_all(df))}
+            <h3>Soft Per-Class Failure Quantification</h3>
+            {Plot(fig=plotting.plot_failure_quantification_per_class_all(df))}
 
-            <h3>Crisp Per-Class Aggregation</h3>
-            {Plot(fig=plotting.plot_acc_per_class_all(df, crisp_threshold=0.5))}
+            <h3>Crisp Per-Class Failure Quantification</h3>
+            {Plot(fig=plotting.plot_failure_quantification_per_class_all(df, syst_threshold=0.5, asss_threshold=0.5))}
+
+            <h3>Mixed (soft for system, crisp for assessor) Per-Class Failure Quantification</h3>
+            {Plot(fig=plotting.plot_failure_quantification_per_class_all(df, syst_threshold=None, asss_threshold=0.5))}
             <p>We report the times per-class actual accuracy of the system (actually avg of the systems)
             compared to
                 the systems self predicted accuracy by considering confidence <0.5 as predicted failure

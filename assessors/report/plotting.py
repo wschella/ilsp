@@ -23,7 +23,11 @@ def lighten(rgb, scale):
     return colorsys.hls_to_rgb(h, min(1, l * scale), s=s)
 
 
-def plot_acc_per_class_all(df: pd.DataFrame, crisp_threshold: Optional[float] = None) -> Figure:
+def plot_failure_quantification_per_class_all(
+    df: pd.DataFrame,
+    syst_threshold: Optional[float] = None,
+    asss_threshold: Optional[float] = None
+) -> Figure:
     system_ids = sorted(df.syst_id.unique())
     labels = sorted(df.inst_target.unique())
 
@@ -33,10 +37,10 @@ def plot_acc_per_class_all(df: pd.DataFrame, crisp_threshold: Optional[float] = 
 
     fig, ax = plt.subplots(ncols=n_cols, nrows=n_rows, figsize=(12, 4 * n_rows))
     for i, system_id in enumerate(system_ids):
-        system_df = df.loc[df.syst_id == system_id]
-        data = calc_acc_per_class(system_df, labels, crisp_threshold)
+        df_overlapped = df.loc[df.syst_id == system_id]
+        data = failure_quantification_per_class(df_overlapped, syst_threshold, asss_threshold)
         system_ax = ax[i // n_cols, i % n_cols]
-        _plot_acc_per_class(system_ax, data, labels)
+        plot_failure_quantification_per_class(system_ax, data, labels)
 
     # Remove empty axes
     for i in range(n_systems, n_rows * n_cols):
@@ -47,15 +51,22 @@ def plot_acc_per_class_all(df: pd.DataFrame, crisp_threshold: Optional[float] = 
     return fig
 
 
-def plot_acc_per_class_single(df: pd.DataFrame, crisp_threshold: Optional[float] = None) -> Figure:
+def plot_failure_quantification_per_class_single(
+    df: pd.DataFrame,
+    syst_threshold: Optional[float] = None,
+    asss_threshold: Optional[float] = None,
+    syst_id: Optional[int] = None,
+) -> Figure:
     fig, ax = plt.subplots(figsize=(9, 4))
-    data = calc_acc_per_class(df, crisp_threshold)
-    _plot_acc_per_class(ax, data, sorted(df.inst_target.unique()))
+    if syst_id is not None:
+        df = df.loc[df.syst_id == syst_id]
+    data = failure_quantification_per_class(df, syst_threshold, asss_threshold)
+    plot_failure_quantification_per_class(ax, data, sorted(df.inst_target.unique()))
+    fig.tight_layout()
     return fig
 
 
-class AccPerClass(TypedDict):
-    # TODO: Add Anify type generic type
+class QuantificationPerClass(TypedDict):
     syst_acc: Union[float, Any]       # The times the system is correct
     syst_pred_acc: Union[float, Any]  # The times the system predicts itself to be correct
     asss_pred_acc: Union[float, Any]  # The times the assessor predicts the system to be correct
@@ -66,29 +77,39 @@ class AccPerClass(TypedDict):
     class_supports: List[int]
 
 
-def calc_acc_per_class(df: pd.DataFrame, labels, crisp_threshold: Optional[float] = None) -> AccPerClass:
+def failure_quantification_per_class(
+    df,
+    syst_threshold: Optional[float] = 0.5,
+    asss_threshold: Optional[float] = 0.5
+) -> QuantificationPerClass:
+
+    labels = sorted(df.inst_target.unique())
+    assert len(labels) > 2
     assert len(df) > 0
 
     # Metrics & helpers
     conf = lambda pred: np.max(pred, axis=1)[0]
-    actual_acc = lambda df: metrics.accuracy_score(
+    accuracy = lambda df: metrics.accuracy_score(
         df.inst_target, df.syst_prediction.map(prediction_to_label))
-    predicted_acc_crisp = lambda preds: preds.map(lambda p: p > crisp_threshold).mean()
-    predicted_acc_prob = lambda preds: preds.mean()
-    predicted_acc = lambda preds: \
-        predicted_acc_crisp(preds) if crisp_threshold is not None \
-        else predicted_acc_prob(preds)
+
+    syst_quantifier = lambda preds: preds.mean()
+    if syst_threshold is not None:
+        syst_quantifier = lambda preds: preds.map(lambda p: p > syst_threshold).mean()
+
+    asss_quantifier = lambda preds: preds.mean()
+    if asss_threshold is not None:
+        asss_quantifier = lambda preds: preds.map(lambda p: p > asss_threshold).mean()
 
     # Total accuracy and predicted accuracy
-    syst_acc = actual_acc(df)
-    syst_pred_acc = predicted_acc(df.syst_prediction.map(conf))
-    asss_pred_acc = predicted_acc(df.asss_prediction)
+    syst_acc = accuracy(df)
+    syst_pred_acc = syst_quantifier(df.syst_prediction.map(conf))
+    asss_pred_acc = asss_quantifier(df.asss_prediction)
 
     # Per class accuracies and predicted accuracies
     class_dfs = [df.loc[df.inst_target == target] for target in labels]
-    syst_class_accs = [actual_acc(df) for df in class_dfs]
-    syst_pred_class_accs = [predicted_acc(df.syst_prediction.map(conf)) for df in class_dfs]
-    asss_pred_class_accs = [predicted_acc(df.asss_prediction) for df in class_dfs]
+    syst_class_accs = [accuracy(df) for df in class_dfs]
+    syst_pred_class_accs = [syst_quantifier(df.syst_prediction.map(conf)) for df in class_dfs]
+    asss_pred_class_accs = [asss_quantifier(df.asss_prediction) for df in class_dfs]
 
     return {
         "syst_acc": syst_acc,
@@ -102,7 +123,7 @@ def calc_acc_per_class(df: pd.DataFrame, labels, crisp_threshold: Optional[float
     }
 
 
-def _plot_acc_per_class(ax: Axes, data: AccPerClass, labels: List[str]):
+def plot_failure_quantification_per_class(ax: Axes, data: QuantificationPerClass, labels: List[str], with_support: bool = True, with_diff: bool = True):
     x = np.arange(len(labels))
     width = 0.20
 
@@ -135,16 +156,17 @@ def _plot_acc_per_class(ax: Axes, data: AccPerClass, labels: List[str]):
         return line
 
     l1 = draw_hline(data['syst_acc'], corresponding_color(syst_acc_bar))
-    l2 = draw_hline(data['syst_pred_acc'], corresponding_color(syst_pred_acc_bar), True)
-    l3 = draw_hline(data['asss_pred_acc'], corresponding_color(asss_pred_acc_bar), True)
+    l2 = draw_hline(data['syst_pred_acc'], corresponding_color(syst_pred_acc_bar), with_diff)
+    l3 = draw_hline(data['asss_pred_acc'], corresponding_color(asss_pred_acc_bar), with_diff)
 
     # Fix styling of the plot
     # ax.set_title("Class Wise Aggregation")
-    ax.set_xlabel("Class")
-    ax.set_ylabel("Accuracy")
+    ax.set_xlabel("class", fontweight="bold")
+    ax.set_ylabel("accuracy", fontweight="bold")
     ax.set_xticks(x)
-    ax.set_xticklabels([f"{l}\n ({s})" for s, l in zip(data['class_supports'], labels)])
-    # ax.set_xticklabels(labels)
+    ax.set_xticklabels(labels)
+    if with_support:
+        ax.set_xticklabels([f"{l}\n ({s})" for s, l in zip(data['class_supports'], labels)])
     line_legend = ax.legend(handles=[l1, l2, l3], loc="lower right")
     ax.add_artist(line_legend)
     ax.legend(loc="lower left", handles=[syst_acc_bar, syst_pred_acc_bar, asss_pred_acc_bar])
