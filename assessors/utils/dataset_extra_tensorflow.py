@@ -88,3 +88,10 @@ def peek(ds: tf.data.Dataset) -> Any:
     Peek at the first element of a Dataset. Likely highly inefficient.
     """
     return iter(ds.take(1)).next()  # type: ignore
+
+
+def at(ds: tf.data.Dataset, index: int) -> Any:
+    """
+    Get the element at index :index: of a Dataset.
+    """
+    return iter(ds.skip(index).take(1)).next()  # type: ignore

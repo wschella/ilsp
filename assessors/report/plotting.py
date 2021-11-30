@@ -125,7 +125,7 @@ def failure_quantification_per_class(
 
 def plot_failure_quantification_per_class(ax: Axes, data: QuantificationPerClass, labels: List[str], with_support: bool = True, with_diff: bool = True):
     x = np.arange(len(labels))
-    width = 0.20
+    width = 0.28
 
     # Plot bars
     syst_acc_bar = ax.bar(
@@ -152,7 +152,7 @@ def plot_failure_quantification_per_class(ax: Axes, data: QuantificationPerClass
         label = f"{y:.3f}"
         if with_diff:
             label += f" ({y - data['syst_acc']:+.3f})"
-        line = ax.axhline(y, ls="dotted", lw=2, c=color, label=label)
+        line = ax.axhline(y, ls="dotted", lw=4, c=color, label=label)
         return line
 
     l1 = draw_hline(data['syst_acc'], corresponding_color(syst_acc_bar))

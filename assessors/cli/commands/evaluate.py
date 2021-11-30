@@ -10,9 +10,9 @@ import pandas as pd
 import numpy as np
 import sklearn.metrics as metrics
 from tqdm import tqdm
-from assessors.cli.commands.report import generate_report
 
 from assessors.core import ModelDefinition, CustomDatasetDescription, Dataset, PredictionRecord, TypedPredictionRecord, AssessorPredictionRecord, LeanPredictionRecord
+from assessors.cli.commands.report import generate_report
 from assessors.cli.shared import CommandArguments, AssessorHub, SystemHub, DatasetHub
 from assessors.cli.cli import cli, CLIArgs
 import assessors.report as rr
@@ -62,10 +62,15 @@ def evaluate_assessor(ctx, **kwargs):
 
     # Load & mangle dataset
     _ds: Dataset[PredictionRecord, Any] = CustomDatasetDescription(path=args.dataset).load_all()
-    (_train, test) = _ds.split_relative(-0.2)
+    (_train, test) = _ds.split_relative(-0.25)
+
+    import tensorflow as tf
+
+    n_systems = 5
 
     def to_supervised(record: PredictionRecord):
-        return (record['inst_features'], record['syst_pred_score'])
+        syst_id = tf.one_hot(record['syst_id'], depth=n_systems, dtype=tf.float64)
+        return (record['inst_features'], syst_id), record['syst_pred_score']
 
     # Evaluate and log
     os.makedirs(os.path.dirname(args.output_path.resolve()), exist_ok=True)

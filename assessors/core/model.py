@@ -29,6 +29,8 @@ class ModelDefinition(ABC):
     def score(self, y_true, y_pred) -> float:
         pass
 
+# TODO: Add assessor model definition, wich has a specific init or set syst_id and syst_features input size
+
 
 class TrainedModel(ABC):
     @abstractmethod

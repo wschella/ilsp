@@ -1,3 +1,4 @@
+from logging import raiseExceptions
 from typing import *
 from dataclasses import dataclass
 from pathlib import Path
@@ -137,8 +138,14 @@ def train_assessor(ctx, **kwargs):
     args = TrainAssessorArgs(parent=ctx.obj, **kwargs).validated()
     model_def: ModelDefinition = AssessorHub.get(args.dataset_name, args.model)()
 
+    import tensorflow as tf
+
+    n_systems = 5
+
     def to_supervised(record: PredictionRecord):
-        return (record['inst_features'], record['syst_pred_score'])
+        syst_id = tf.one_hot(record['syst_id'], depth=n_systems, dtype=tf.float64)
+        inst_weight = 4.0 if record['syst_id'] == 0 else 1.0
+        return (record['inst_features'], syst_id), record['syst_pred_score'], inst_weight
 
     _dataset: Dataset[PredictionRecord, Any] = CustomDatasetDescription(
         path=args.dataset).load_all()
@@ -146,10 +153,11 @@ def train_assessor(ctx, **kwargs):
 
     path = Path(f"artifacts/assessors/{args.dataset_name}/{args.model}/{args.identifier}/")
 
-    (train, test) = supervised.split_relative(-0.2)
+    (train, test) = supervised.split_relative(-0.25)
     print(f'Train size: {len(train)}, test size: {len(test)}')
     print(f'Training {model_def.name()}')
     model = model_def.train(train, validation=test, restore=Restore(path, args.restore))
+
     if args.save:
         model.save(path)
 
