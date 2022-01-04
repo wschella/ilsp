@@ -12,6 +12,24 @@ from assessors.core.dataset_tensorflow import TFDataset
 
 
 class TFModelDefinition(ModelDefinition, ABC):
+    def train(self, dataset: TFDataset, validation: TFDataset, restore: Restore) -> TrainedModel:
+        return self._train(dataset.ds, validation.ds, restore)
+
+    def try_restore_from(self, path: Path) -> Optional[TrainedModel]:
+        try:
+            model = tf.keras.models.load_model(path)
+            print(f"Restored full model from {path}")
+            return TrainedTFModel(model, self)
+
+        except IOError as err:
+            if "SavedModel file does not exist at" in str(err):
+                print(f"Did not find any saved full models in {path}")
+                return None
+            else:
+                raise err
+
+    # --------------------------------------------------------------------------
+
     epochs: int = 10
 
     @abstractmethod
@@ -36,9 +54,6 @@ class TFModelDefinition(ModelDefinition, ABC):
 
     def get_fit_kwargs(self, model: keras.Model, dataset: tf.data.Dataset, **kwargs) -> Dict:
         return {}
-
-    def train(self, dataset: TFDataset, validation: TFDataset, restore: Restore) -> TrainedModel:
-        return self._train(dataset.ds, validation.ds, restore)
 
     def _train(self, dataset, validation, restore: Restore, **kwargs) -> TrainedModel:
         restore.log(self.name())
@@ -83,25 +98,6 @@ class TFModelDefinition(ModelDefinition, ABC):
         )
 
         return TrainedTFModel(model, self)
-
-    def try_restore_from(self, path: Path) -> Optional[TrainedModel]:
-        if (model := self.__try_restore_from(path)) is not None:
-            return TrainedTFModel(model, self)
-        else:
-            return None
-
-    def __try_restore_from(self, path: Path) -> Optional[keras.Model]:
-        try:
-            model = tf.keras.models.load_model(path)
-            print(f"Restored full model from {path}")
-            return model
-
-        except IOError as err:
-            if "SavedModel file does not exist at" in str(err):
-                print(f"Did not find any saved full models in {path}")
-                return None
-            else:
-                raise err
 
 
 class TrainedTFModel(TrainedModel):
