@@ -2,7 +2,8 @@ from typing import *
 from abc import ABC, abstractmethod
 
 import assessors.models as models
-from assessors.core import ModelDefinition, TFDatasetDescription, DatasetDescription, CSVDatasetDescription
+import assessors.core as core
+from assessors.core import ModelDefinition, DatasetDescription
 
 
 class SystemHub():
@@ -61,9 +62,11 @@ class AssessorHub():
 
 class DatasetHub():
     datasets: Dict[str, DatasetDescription] = {
-        'mnist': TFDatasetDescription('mnist'),
-        'cifar10': TFDatasetDescription('cifar10'),
-        'segment': CSVDatasetDescription('segment_brodley.csv'),
+        'mnist': core.TFDatasetDescription('mnist'),
+        'mnist-torch': core.TorchMNISTDatasetDescription(),
+        'cifar10': core.TFDatasetDescription('cifar10'),
+        'cifar10-torch': core.TorchCIFAR10DatasetDescription(),
+        'segment': core.CSVDatasetDescription('segment_brodley.csv'),
     }
 
     @staticmethod

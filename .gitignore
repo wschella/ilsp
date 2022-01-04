@@ -2,7 +2,8 @@
 
 # We don't commit data or model artifacts to source.
 /artifacts/
-datasets/mnist/
+datasets/MNIST/
+datasets/CIFAR10/
 results.csv
 results.html
 system_results.csv

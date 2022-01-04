@@ -22,8 +22,9 @@ class TFDatasetDescription(DatasetDescription[E, 'TFDataset']):
     def __init__(self, name: str):
         self.name = name
 
-    def download(self, dest: Path = None) -> None:
-        return super().download(dest=dest)
+    def download(self) -> None:
+        tfds.load(self.name, split=None, with_info=False)
+        print(f"Downloaded {self.name} dataset")
 
     def load(self) -> Dict[str, TFDataset[E]]:
         return self._load(None)

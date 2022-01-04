@@ -19,7 +19,7 @@ class DatasetDescription(Generic[E, DS], ABC):
     """
 
     @abstractmethod
-    def download(self, dest: Path = None) -> None:
+    def download(self) -> None:
         """
         Download the dataset to the given destination.
         """
