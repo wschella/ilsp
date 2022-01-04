@@ -1,3 +1,4 @@
+import logging
 from typing import *
 from dataclasses import dataclass
 from pathlib import Path
@@ -60,8 +61,8 @@ def train_assessor(ctx, **kwargs):
     path = Path(f"artifacts/assessors/{args.dataset_name}/{args.model}/{args.identifier}/")
 
     (train, test) = supervised.split_relative(-0.25)
-    print(f'Train size: {len(train)}, test size: {len(test)}')
-    print(f'Training {model_def.name()}')
+    logging.info(f'Train size: {len(train)}, test size: {len(test)}')
+    logging.info(f'Training {model_def.name()}')
     model = model_def.train(train, validation=test, restore=Restore(path, args.restore))
 
     if args.save:

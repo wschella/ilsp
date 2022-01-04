@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import *
 from abc import ABC, abstractmethod
 from pathlib import Path
+import logging
 
 import tensorflow as tf
 import tensorflow.keras as keras
@@ -18,12 +19,13 @@ class TFModelDefinition(ModelDefinition, ABC):
     def try_restore_from(self, path: Path) -> Optional[TrainedModel]:
         try:
             model = tf.keras.models.load_model(path)
-            print(f"Restored full model from {path}")
+            logging.info(f"Restored full model from {path}")
             return TrainedTFModel(model, self)
 
-        except IOError as err:
-            if "SavedModel file does not exist at" in str(err):
-                print(f"Did not find any saved full models in {path}")
+        except (IOError, OSError) as err:
+            if "SavedModel file does not exist at" in str(err) \
+               or "No file or directory found at" in str(err):
+                logging.info(f"Did not find any saved full models in {path}")
                 return None
             else:
                 raise err

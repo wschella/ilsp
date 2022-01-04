@@ -17,6 +17,11 @@ poe run train-assessor artifacts/datasets/mnist/default/kfold_5/ -m mnist_defaul
 poe run eval-assessor artifacts/datasets/mnist/default/kfold_5/ -m mnist_default
 ```
 
+## Organisation
+
+TODO
+Dataset and Model wrappers (their interfaces), Hubs, CLI, etc.
+
 ## Setup
 
 We use a combination [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/) for environment management (Python version, CUDA support, ...), and [Poetry](https://python-poetry.org/) for package & dependency management. You only need Conda to get started, which will take care of installing Poetry for you. See [environment.yml](./environment.yml) for details.

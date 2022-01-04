@@ -1,4 +1,5 @@
 import logging
+import os
 
 
 # We need to do this before importing TF
@@ -10,6 +11,12 @@ from tensorflow.python.ops.numpy_ops import np_config
 np_config.enable_numpy_behavior()  # nopep8
 
 from assessors.cli import cli
+
+logging.basicConfig(
+    level=os.environ.get("LOGLEVEL", "INFO"),
+    datefmt="[%H:%M:%S]",
+    format="%(asctime)s:%(levelname)s:%(name)s:%(module)s %(message)s")
+logging.getLogger("absl").setLevel(logging.WARNING)
 
 
 def run():
