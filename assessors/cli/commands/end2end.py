@@ -8,7 +8,8 @@ from assessors.core import Restore
 from assessors.cli.shared import CommandArguments, DatasetHub, AssessorHub, SystemHub
 from assessors.cli.cli import cli, CLIArgs
 
-from assessors.cli.commands.dataset import dataset_download, dataset_make
+from assessors.cli.commands.dataset_download import dataset_download
+from assessors.cli.commands.dataset_make import dataset_make
 from assessors.cli.commands.train import train_kfold, train_assessor
 from assessors.cli.commands.evaluate import evaluate_assessor
 

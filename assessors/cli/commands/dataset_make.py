@@ -12,28 +12,6 @@ from assessors.cli.cli import cli, CLIArgs
 
 
 @dataclass
-class DownloadArgs(CommandArguments):
-    parent: CLIArgs = CLIArgs()
-    name: str = "mnist"
-
-    def validate(self):
-        self.parent.validate()
-
-
-@cli.command('dataset-download')
-@click.argument('name')
-@click.pass_context
-def dataset_download(ctx, **kwargs):
-    """
-    Download dataset NAME from tensorflow datasets. Happens automatically as required as well.
-    See https://www.tensorflow.org/datasets/catalog/overview for an overview of options.
-    """
-    args = DownloadArgs(parent=ctx.obj, **kwargs).validated()
-    dataset: DatasetDescription = DatasetHub.get(args.name)
-    dataset.download()
-
-
-@dataclass
 class MakeKFoldArgs(CommandArguments):
     parent: CLIArgs = CLIArgs()
     dataset: str = "mnist"
