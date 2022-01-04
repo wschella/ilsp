@@ -10,7 +10,8 @@ from assessors.cli.cli import cli, CLIArgs
 
 from assessors.cli.commands.dataset_download import dataset_download
 from assessors.cli.commands.dataset_make import dataset_make
-from assessors.cli.commands.train import train_kfold, train_assessor
+from assessors.cli.commands.train_base_kfold import train_base_kfold
+from assessors.cli.commands.train_assessor import train_assessor
 from assessors.cli.commands.evaluate import evaluate_assessor
 
 
@@ -61,7 +62,7 @@ def end2end(ctx, **kwargs):
     # Train base population
     print("# Training base population")
     ctx.invoke(
-        train_kfold,
+        train_base_kfold,
         dataset=args.dataset,
         model=args.base_model,
         folds=args.folds,
