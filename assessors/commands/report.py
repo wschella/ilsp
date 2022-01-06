@@ -2,12 +2,9 @@ from typing import *
 from dataclasses import dataclass
 from pathlib import Path
 import os
-import json
 
 import click
 import pandas as pd
-import numpy as np
-import sklearn.metrics as metrics
 
 from assessors.utils.cli import CommandArguments
 from assessors.application import cli, CLIArgs

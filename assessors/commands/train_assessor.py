@@ -5,7 +5,7 @@ from pathlib import Path
 
 import click
 
-from assessors.core import ModelDefinition, Restore, Dataset, PredictionRecord, CustomDatasetDescription
+from assessors.core import ModelDefinition, Restore, Dataset, PredictionRecord
 from assessors.hubs import DatasetHub, AssessorHub
 from assessors.application import cli
 from assessors.commands import evaluate_assessor
@@ -45,18 +45,19 @@ def train_assessor(ctx, **kwargs):
     args = TrainAssessorArgs(parent=ctx.obj, **kwargs).validated()
     model_def: ModelDefinition = AssessorHub.get(args.dataset_name, args.model)()
 
-    import tensorflow as tf
-
     n_systems = 5
 
     def to_supervised(record: PredictionRecord):
-        syst_id = tf.one_hot(record['syst_id'], depth=n_systems, dtype=tf.float64)
-        inst_weight = 4.0 if record['syst_id'] == 0 else 1.0
-        return (record['inst_features'], syst_id), record['syst_pred_score'], inst_weight
+        raise NotImplementedError()
+        # syst_id = tf.one_hot(record['syst_id'], depth=n_systems, dtype=tf.float64)
+        # inst_weight = 4.0 if record['syst_id'] == 0 else 1.0
+        # return (record['inst_features'], syst_id), record['syst_pred_score'], inst_weight
 
-    _dataset: Dataset[PredictionRecord, Any] = CustomDatasetDescription(
-        path=args.dataset).load_all()
-    supervised = _dataset.map(to_supervised)
+    _dataset = None
+    raise NotImplementedError()
+    # _dataset: Dataset[PredictionRecord, Any] = CustomDatasetDescription(
+    #     path=args.dataset).load_all()
+    # supervised = _dataset.map(to_supervised)
 
     path = Path(f"artifacts/assessors/{args.dataset_name}/{args.model}/{args.identifier}/")
 

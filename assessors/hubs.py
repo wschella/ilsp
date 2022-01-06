@@ -8,14 +8,14 @@ from assessors.core import ModelDefinition, DatasetDescription
 class SystemHub():
     systems: Dict[str, Dict[str, Type[ModelDefinition]]] = {
         'mnist': {
-            "default": models.MNISTDefault,
+            # "default": models.MNISTDefault,
         },
         'cifar10': {
-            "default": models.CIFAR10Default,
-            "wide": models.CIFAR10Wide,
+            # "default": models.CIFAR10Default,
+            # "wide": models.CIFAR10Wide,
         },
         'segment': {
-            "default": models.SegmentDefault,
+            # "default": models.SegmentDefault,
         },
     }
 
@@ -35,14 +35,14 @@ class SystemHub():
 class AssessorHub():
     assessors: Dict[str, Dict[str, Type[ModelDefinition]]] = {
         'mnist': {
-            "default": models.MNISTAssessorDefault,
+            # "default": models.MNISTAssessorDefault,
         },
         'cifar10': {
-            "default": models.CIFAR10AssessorDefault,
-            "wide": models.CIFAR10AssessorWide,
+            # "default": models.CIFAR10AssessorDefault,
+            # "wide": models.CIFAR10AssessorWide,
         },
         'segment': {
-            "default": models.SegmentAssessorDefault
+            # "default": models.SegmentAssessorDefault
         },
     }
 
@@ -61,11 +61,8 @@ class AssessorHub():
 
 class DatasetHub():
     datasets: Dict[str, DatasetDescription] = {
-        'mnist': core.TFDatasetDescription('mnist'),
-        'mnist-torch': core.TorchMNISTDatasetDescription(),
-        'cifar10': core.TFDatasetDescription('cifar10'),
-        'cifar10-torch': core.TorchCIFAR10DatasetDescription(),
-        'segment': core.CSVDatasetDescription('segment_brodley.csv'),
+        'mnist': core.TorchMNISTDatasetDescription(),
+        'cifar10': core.TorchCIFAR10DatasetDescription(),
     }
 
     @staticmethod

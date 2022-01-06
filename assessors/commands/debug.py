@@ -4,15 +4,15 @@ from pathlib import Path
 import click
 
 from assessors.application import cli
-from assessors.core import Dataset, CustomDatasetDescription
-import assessors.utils.dataset_extra as dse
+from assessors.core import Dataset
 
 
 @cli.command('debug-peek-dataset')
 @click.argument('path', type=click.Path(exists=True, path_type=Path))
 @click.option('-w', '--without-fields', multiple=True, help="Fields to exclude from the dataset")
 def peek_dataset(path: Path, without_fields: List[str]) -> None:
-    ds: Dataset = CustomDatasetDescription(path).load_all()
+    raise NotImplementedError()
+    # ds: Dataset = CustomDatasetDescription(path).load_all()
 
     if without_fields != []:
         def filter_fields(entry):
@@ -31,7 +31,8 @@ def peek_dataset(path: Path, without_fields: List[str]) -> None:
 @click.option('-u', '--unique', is_flag=True, help="List unique values only", default=False)
 @click.option('-h', '--head', default=0, help="Number of entries to show")
 def list_dataset(path: Path, field: str, unique: bool, head: int) -> None:
-    ds: Dataset = CustomDatasetDescription(path).load_all()
+    raise NotImplementedError()
+    # ds: Dataset = CustomDatasetDescription(path).load_all()
     ds = ds.map(lambda x: x[field])
 
     if unique:
@@ -51,7 +52,8 @@ def list_dataset(path: Path, field: str, unique: bool, head: int) -> None:
 @click.option('-u', '--unique', is_flag=True, help="List unique values only", default=False)
 @click.option('-h', '--head', default=0, help="Number of entries to show")
 def list_dataset_split(path: Path, field: str, split_at: int, unique: bool, head: int) -> None:
-    ds: Dataset = CustomDatasetDescription(path).load_all()
+    raise NotImplementedError()
+    # ds: Dataset = CustomDatasetDescription(path).load_all()
     ds = ds.map(lambda x: x[field])
     (train, test) = ds.split_absolute(split_at)
 

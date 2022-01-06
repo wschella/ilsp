@@ -3,20 +3,17 @@ from dataclasses import dataclass
 from pathlib import Path
 import csv
 import os
-import json
 
 import click
-import pandas as pd
 import numpy as np
 import sklearn.metrics as metrics
 from tqdm import tqdm
 
-from assessors.core import ModelDefinition, CustomDatasetDescription, Dataset, PredictionRecord, TypedPredictionRecord, AssessorPredictionRecord, LeanPredictionRecord
-from assessors.commands import generate_report
+from assessors.core import ModelDefinition, Dataset, PredictionRecord, TypedPredictionRecord, AssessorPredictionRecord, LeanPredictionRecord
+from assessors.commands.report import generate_report
 from assessors.utils.cli import CommandArguments
 from assessors.hubs import AssessorHub, SystemHub, DatasetHub
 from assessors.application import cli, CLIArgs
-import assessors.report as rr
 
 
 @dataclass
@@ -62,16 +59,17 @@ def evaluate_assessor(ctx, **kwargs):
     model = model_def.restore_from(model_path)
 
     # Load & mangle dataset
-    _ds: Dataset[PredictionRecord, Any] = CustomDatasetDescription(path=args.dataset).load_all()
+    _ds = None
+    raise NotImplementedError()
+    # _ds: Dataset[PredictionRecord, Any] = CustomDatasetDescription(path=args.dataset).load_all()
     (_train, test) = _ds.split_relative(-0.25)
-
-    import tensorflow as tf
 
     n_systems = 5
 
     def to_supervised(record: PredictionRecord):
-        syst_id = tf.one_hot(record['syst_id'], depth=n_systems, dtype=tf.float64)
-        return (record['inst_features'], syst_id), record['syst_pred_score']
+        raise NotImplementedError()
+        # syst_id = tf.one_hot(record['syst_id'], depth=n_systems, dtype=tf.float64)
+        # return (record['inst_features'], syst_id), record['syst_pred_score']
 
     # Evaluate and log
     os.makedirs(os.path.dirname(args.output_path.resolve()), exist_ok=True)
