@@ -47,29 +47,3 @@ def generate_report(ctx, **kwargs):
         # And create a full report
         rr.AssessorReport(df).save(args.output_path)
         print(f"Report saved to {args.output_path}")
-
-
-@dataclass
-class ReportRegenArgs(CommandArguments):
-    parent: CLIArgs = CLIArgs()
-    results: Optional[Path] = None
-
-    def validate(self):
-        self.parent.validate()
-
-
-@cli.command(name='report-regen')
-@click.option('-r', '--results', default=None, type=click.Path(exists=True, path_type=Path), help="The results file to use")
-@click.pass_context
-def regen_report(ctx, **kwargs):
-    args = ReportRegenArgs(parent=ctx.obj, **kwargs).validated()
-
-    files = [args.results] if args.results else list(
-        Path('./artifacts/results/').glob("*/results.csv"))
-
-    for f in files:
-        ctx.invoke(
-            generate_report,
-            results=f,
-            output_path=f.with_suffix(".html"),
-            overwrite=True)
