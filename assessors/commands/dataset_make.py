@@ -7,8 +7,9 @@ import click
 from assessors.core import ModelDefinition, PredictionRecord
 from assessors.core import Dataset, DatasetDescription
 from assessors.utils import dataset_extra as dse
-from assessors.cli.shared import CommandArguments, SystemHub, DatasetHub
-from assessors.cli.cli import cli, CLIArgs
+from assessors.utils.cli import CommandArguments
+from assessors.hubs import SystemHub, DatasetHub
+from assessors.application import cli, CLIArgs
 
 
 @dataclass

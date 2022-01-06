@@ -5,9 +5,9 @@ from pathlib import Path
 import click
 
 from assessors.core import ModelDefinition, Restore, Dataset, DatasetDescription
-from assessors.cli.shared import DatasetHub, SystemHub
-from assessors.cli.cli import cli
-from assessors.cli.commands.train_ import TrainArgs
+from assessors.hubs import DatasetHub, SystemHub
+from assessors.application import cli
+from assessors.commands.train_ import TrainArgs
 
 
 @dataclass

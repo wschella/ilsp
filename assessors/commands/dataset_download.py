@@ -4,8 +4,9 @@ from pathlib import *
 
 import click
 
-from assessors.cli.cli import cli, CLIArgs
-from assessors.cli.shared import CommandArguments, DatasetHub
+from assessors.application import cli, CLIArgs
+from assessors.utils.cli import CommandArguments
+from assessors.hubs import DatasetHub
 from assessors.core import DatasetDescription
 
 

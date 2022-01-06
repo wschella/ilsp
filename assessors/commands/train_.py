@@ -3,8 +3,8 @@ from dataclasses import dataclass
 
 
 from assessors.core import Restore
-from assessors.cli.shared import CommandArguments
-from assessors.cli.cli import CLIArgs
+from assessors.utils.cli import CommandArguments
+from assessors.application import CLIArgs
 
 
 @dataclass

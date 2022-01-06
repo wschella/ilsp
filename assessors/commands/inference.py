@@ -12,13 +12,14 @@ import pandas as pd
 import numpy as np
 import sklearn.metrics as metrics
 from tqdm import tqdm
-from assessors.cli.commands.report import generate_report
+from assessors.commands import generate_report
 from assessors.core.dataset_tensorflow import TFDataset
 
 import assessors.utils.dataset_extra_tensorflow as dsetf
 from assessors.core import ModelDefinition, CustomDatasetDescription, Dataset, PredictionRecord, TypedPredictionRecord, AssessorPredictionRecord, LeanPredictionRecord
-from assessors.cli.shared import CommandArguments, AssessorHub, SystemHub, DatasetHub
-from assessors.cli.cli import cli, CLIArgs
+from assessors.utils.cli import CommandArguments
+from assessors.hubs import AssessorHub, SystemHub, DatasetHub
+from assessors.application import cli, CLIArgs
 import assessors.report as rr
 
 

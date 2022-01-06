@@ -9,8 +9,8 @@ import pandas as pd
 import numpy as np
 import sklearn.metrics as metrics
 
-from assessors.cli.shared import CommandArguments
-from assessors.cli.cli import cli, CLIArgs
+from assessors.utils.cli import CommandArguments
+from assessors.application import cli, CLIArgs
 import assessors.report as rr
 
 

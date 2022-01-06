@@ -6,10 +6,10 @@ from pathlib import Path
 import click
 
 from assessors.core import ModelDefinition, Restore, Dataset, PredictionRecord, CustomDatasetDescription
-from assessors.cli.shared import DatasetHub, AssessorHub
-from assessors.cli.cli import cli
-from assessors.cli.commands.evaluate import evaluate_assessor
-from assessors.cli.commands.train_ import TrainArgs
+from assessors.hubs import DatasetHub, AssessorHub
+from assessors.application import cli
+from assessors.commands import evaluate_assessor
+from assessors.commands.train_ import TrainArgs
 
 
 @dataclass

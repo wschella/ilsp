@@ -12,9 +12,10 @@ import sklearn.metrics as metrics
 from tqdm import tqdm
 
 from assessors.core import ModelDefinition, CustomDatasetDescription, Dataset, PredictionRecord, TypedPredictionRecord, AssessorPredictionRecord, LeanPredictionRecord
-from assessors.cli.commands.report import generate_report
-from assessors.cli.shared import CommandArguments, AssessorHub, SystemHub, DatasetHub
-from assessors.cli.cli import cli, CLIArgs
+from assessors.commands import generate_report
+from assessors.utils.cli import CommandArguments
+from assessors.hubs import AssessorHub, SystemHub, DatasetHub
+from assessors.application import cli, CLIArgs
 import assessors.report as rr
 
 

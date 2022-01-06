@@ -3,7 +3,7 @@ from pathlib import Path
 
 import click
 
-from assessors.cli.cli import cli
+from assessors.application import cli
 from assessors.core import Dataset, CustomDatasetDescription
 import assessors.utils.dataset_extra as dse
 

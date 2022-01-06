@@ -5,14 +5,11 @@ from pathlib import Path
 import click
 
 from assessors.core import Restore
-from assessors.cli.shared import CommandArguments, DatasetHub, AssessorHub, SystemHub
-from assessors.cli.cli import cli, CLIArgs
+from assessors.utils.cli import CommandArguments
+from assessors.hubs import DatasetHub, AssessorHub, SystemHub
+from assessors.application import cli, CLIArgs
 
-from assessors.cli.commands.dataset_download import dataset_download
-from assessors.cli.commands.dataset_make import dataset_make
-from assessors.cli.commands.train_base_kfold import train_base_kfold
-from assessors.cli.commands.train_assessor import train_assessor
-from assessors.cli.commands.evaluate import evaluate_assessor
+import assessors.commands as commands
 
 
 @dataclass
@@ -57,12 +54,12 @@ def end2end(ctx, **kwargs):
 
     # Download and prepare relevant dataset
     if args.download:
-        ctx.invoke(dataset_download, name=args.dataset)
+        ctx.invoke(commands.dataset_download, name=args.dataset)
 
     # Train base population
     print("# Training base population")
     ctx.invoke(
-        train_base_kfold,
+        commands.train_base_kfold,
         dataset=args.dataset,
         model=args.base_model,
         folds=args.folds,
@@ -73,7 +70,7 @@ def end2end(ctx, **kwargs):
     # Make assessor dataset
     print("# Making assessor dataset")
     ctx.invoke(
-        dataset_make,
+        commands.dataset_make,
         dataset=args.dataset,
         model=args.base_model,
         folds=args.folds,
@@ -84,7 +81,7 @@ def end2end(ctx, **kwargs):
     # Train assessor
     print("# Training assessor")
     ctx.invoke(
-        train_assessor,
+        commands.train_assessor,
         dataset=dataset_path,
         dataset_name=args.dataset,
         model=args.assessor_model,
