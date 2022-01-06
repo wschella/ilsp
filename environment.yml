@@ -13,8 +13,13 @@ channels:
 # https://pytorch.org/get-started/locally/
 dependencies:
   - python=3.9
-  - pip=21.1
+  - pip=21.3
   - poetry=1.1
+
+  # From >= 60 onward, poetry triggers a nasty deprecation warning in setuptools,
+  # so we pin it here to avoid that.
+  - setuptools=59.4 
+
   - cudnn=8.1
   - cudatoolkit=11.3
 
