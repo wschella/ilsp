@@ -12,6 +12,7 @@ from assessors.packages.click_dataclass import click_dataclass
 @dataclass
 class DownloadArgs(CommandArguments):
     name: str
+    path: Optional[Path] = None
 
 
 @cli.command('download-dataset')
@@ -24,4 +25,4 @@ def dataset_download(**kwargs):
     """
     args = DownloadArgs(**kwargs).validated()
     dataset: DatasetDescription = DatasetHub.get(args.name)
-    dataset.download()
+    dataset.download(args.path)

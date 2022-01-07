@@ -19,28 +19,28 @@ class DatasetDescription(Generic[E, DS], ABC):
     """
 
     @abstractmethod
-    def download(self) -> None:
+    def download(self, path: Optional[Path] = None) -> None:
         """
         Download the dataset to the given destination.
         """
         pass
 
     @abstractmethod
-    def split(self, name: str) -> DS:
+    def load_split(self, name: str, path: Optional[Path] = None) -> DS:
         """
         Return a Dataset for the given split.
         """
         pass
 
     @abstractmethod
-    def load(self) -> Dict[str, DS]:
+    def load(self, path: Optional[Path] = None) -> Dict[str, DS]:
         """
         Load all splits of the dataset in a dict.
         """
         pass
 
     @abstractmethod
-    def load_all(self) -> DS:
+    def load_all(self, path: Optional[Path] = None) -> DS:
         """
         Load all the splits off the dataset combined together
         """
