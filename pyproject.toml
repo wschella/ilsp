@@ -36,5 +36,9 @@ type = { cmd = "mypy assessors" }
 temp = { cmd = "python scripts/temp.py" }
 gpu  = { cmd = "python scripts/gpu.py" }
 
+# From packages
+cdc-hello = { script = "assessors.packages.click_dataclass.examples.hello:cli" }
+cdc-path  = { script = "assessors.packages.click_dataclass.examples.path:cli" }
+
 [tool.mypy]
 ignore_missing_imports = true

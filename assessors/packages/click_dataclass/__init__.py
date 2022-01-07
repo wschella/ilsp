@@ -1,0 +1,1 @@
+from assessors.packages.click_dataclass import click_dataclass
