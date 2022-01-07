@@ -26,13 +26,6 @@ class DatasetDescription(Generic[E, DS], ABC):
         pass
 
     @abstractmethod
-    def load_split(self, name: str, path: Optional[Path] = None) -> DS:
-        """
-        Return a Dataset for the given split.
-        """
-        pass
-
-    @abstractmethod
     def load(self, path: Optional[Path] = None) -> Dict[str, DS]:
         """
         Load all splits of the dataset in a dict.
@@ -45,6 +38,12 @@ class DatasetDescription(Generic[E, DS], ABC):
         Load all the splits off the dataset combined together
         """
         pass
+
+    def load_split(self, name: str, path: Optional[Path] = None) -> DS:
+        ds = self.load(path).get(name)
+        if ds is None:
+            raise ValueError(f"Unknown split {name}")
+        return ds
 
 
 class Dataset(Generic[E, SELF], ABC, Iterable[E], Sized):

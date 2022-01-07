@@ -48,12 +48,6 @@ class TorchVisionDatasetDescription(DatasetDescription[E, 'TorchDataset']):
             splits[split_name] = TorchDataset(split)
         return splits
 
-    def load_split(self, name: str, path: Optional[Path] = None) -> TorchDataset:
-        ds = self.load(path).get(name)
-        if ds is None:
-            raise ValueError(f"Unknown split {name}")
-        return ds
-
     def load_all(self, path: Optional[Path] = None) -> TorchDataset:
         """
         Load all the splits off the dataset combined together

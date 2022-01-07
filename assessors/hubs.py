@@ -63,6 +63,7 @@ class DatasetHub():
     datasets: Dict[str, DatasetDescription] = {
         'mnist': core.TorchVisionMNIST,
         'cifar10': core.TorchVisionCIFAR10,
+        'segment': core.OpenMLSegment,
     }
 
     @staticmethod
