@@ -1,11 +1,9 @@
 from __future__ import annotations
 from typing import *
 from pathlib import Path
-from operator import itemgetter
+import logging
 
 import numpy as np
-import pandas as pd
-
 import torchvision as tv
 import torch.utils.data as td
 
@@ -16,9 +14,39 @@ M = TypeVar('M', covariant=True)
 
 
 class TorchVisionDatasetDescription(DatasetDescription[E, 'TorchDataset']):
-    def __init__(self, name: str, location: Path = None) -> None:
-        self.location = location or Path(f"./datasets/{name}")
+    DEFAULT_LOCATION = Path('./datasets/')
+
+    name: str
+    splits: Dict[str, Callable[..., Any]]
+    transform: Optional[Callable[..., Any]]
+
+    def __init__(self, name: str, splits, transform) -> None:
+        self.name = name
+        self.splits = splits
+        self.transform = transform
         super().__init__()
+
+    def download(self, path: Optional[Path] = None) -> None:
+        first_split = list(self.splits.values())[0]
+        first_split(
+            root=path or self.default_location(),
+            download=True,
+        )
+        logging.info("Successfully downloaded dataset %s", self.name)
+
+    def load(self, path: Optional[Path] = None) -> Dict[str, TorchDataset]:
+        """
+        Load all splits of the dataset in a dict.
+        """
+        splits: Dict[str, TorchDataset] = {}
+        for split_name, split_loader in self.splits.items():
+            split = split_loader(
+                root=path or self.default_location(),
+                transform=self.transform,
+                download=True,
+            )
+            splits[split_name] = TorchDataset(split)
+        return splits
 
     def load_split(self, name: str, path: Optional[Path] = None) -> TorchDataset:
         ds = self.load(path).get(name)
@@ -33,49 +61,29 @@ class TorchVisionDatasetDescription(DatasetDescription[E, 'TorchDataset']):
         ds: td.Dataset = td.ConcatDataset([ds.ds for ds in self.load(path).values()])
         return TorchDataset(ds)
 
+    ###
 
-class TorchMNISTDatasetDescription(TorchVisionDatasetDescription):
-    def __init__(self, location: Path = None) -> None:
-        super().__init__('MNIST', location)
-
-    def download(self, path: Optional[Path] = None) -> None:
-        root = str(path or self.location)
-        tv.datasets.MNIST(root, download=True)
-        print("Downloaded MNIST dataset")
-
-    def load(self, path: Optional[Path] = None) -> Dict[str, TorchDataset]:
-        """
-        Load all splits of the dataset in a dict.
-        """
-        root = str(path or self.location)
-        transform = tv.transforms.Compose([tv.transforms.PILToTensor()])
-        kwargs = {'transform': transform, 'root': root, 'download': True}
-        return {
-            'train': TorchDataset(tv.datasets.MNIST(**kwargs, train=True)),
-            'test': TorchDataset(tv.datasets.MNIST(**kwargs, train=False)),
-        }
+    def default_location(self) -> Path:
+        return self.DEFAULT_LOCATION / self.name
 
 
-class TorchCIFAR10DatasetDescription(TorchVisionDatasetDescription):
-    def __init__(self, location: Path = None) -> None:
-        super().__init__('CIFAR10', location)
+TorchVisionMNIST = TorchVisionDatasetDescription(  # type: ignore
+    name='MNIST',
+    splits={
+        'train': lambda **kwargs: tv.datasets.MNIST(**kwargs, train=True),
+        'test': lambda **kwargs: tv.datasets.MNIST(**kwargs, train=False),
+    },
+    transform=tv.transforms.Compose([tv.transforms.PILToTensor()])
+)
 
-    def download(self, path: Optional[Path] = None) -> None:
-        root = str(path or self.location)
-        tv.datasets.CIFAR10(root, download=True)
-        print("Downloaded CIFAR10 dataset")
-
-    def load(self, path: Optional[Path] = None) -> Dict[str, TorchDataset]:
-        """
-        Load all splits of the dataset in a dict.
-        """
-        root = str(path or self.location)
-        transform = tv.transforms.Compose([tv.transforms.PILToTensor()])
-        kwargs = {'transform': transform, 'root': root, 'download': True}
-        return {
-            'train': TorchDataset(tv.datasets.CIFAR10(**kwargs, train=True)),
-            'test': TorchDataset(tv.datasets.CIFAR10(**kwargs, train=False)),
-        }
+TorchVisionCIFAR10 = TorchVisionDatasetDescription(  # type: ignore
+    name='CIFAR10',
+    splits={
+        'train': lambda **kwargs: tv.datasets.CIFAR10(**kwargs, train=True),
+        'test': lambda **kwargs: tv.datasets.CIFAR10(**kwargs, train=False),
+    },
+    transform=tv.transforms.Compose([tv.transforms.PILToTensor()])
+)
 
 
 class TorchDataset(Dataset[E, 'TorchDataset']):

@@ -61,8 +61,8 @@ class AssessorHub():
 
 class DatasetHub():
     datasets: Dict[str, DatasetDescription] = {
-        'mnist': core.TorchMNISTDatasetDescription(),
-        'cifar10': core.TorchCIFAR10DatasetDescription(),
+        'mnist': core.TorchVisionMNIST,
+        'cifar10': core.TorchVisionCIFAR10,
     }
 
     @staticmethod
