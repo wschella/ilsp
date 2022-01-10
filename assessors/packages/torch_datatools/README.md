@@ -14,35 +14,35 @@ You should be able to just include this library and use what you need without an
 
 ## Scope
 
+- Nothing domain specific. Mostly things that you would expect to find in functools or itertools, but then snugly in the Torch Dataset API.
 - We only care about map style datasets, e.g. random-access to an entry by index is always possible.
 - Random-acces to an entry is not expensive.
 - We assume indexes are integral for a lot of the compositions.
 - We assume indexes go from 0 to len(dataset) without holes.
 
-## Potential features
+## Potential upcoming features
 
 - Compositions
-  - [ ] Take
-  - [ ] Skip
   - [ ] Interleave
   - [ ] Reference
-  - [ ] Split
   - [ ] Shuffle
+  - [ ] Unique
 - Sources
-  - [x] PandasDataset
   - [ ] Numpy ndarray
   - [ ] CSV
-- Fetchers
-  - [x] CSV_from_URL
+  - [ ] Constant
 - Transforms
   - [ ] Label to int
   - [ ] Onehot-encode label
   - [ ] Instance weights
-- [ ] Wrapper
-      Optional. Makes all the compositions available straight on the dataset.
+- [ ] Wrapper. Makes all the compositions available straight on the dataset.
 
 ## Sources
 
 - <https://pytorch.org/docs/stable/data.html>
+  Existing already:
+  - ConcatDataset (or ChainDataset for Iterable-style)
+  - TensorDataset
+  - SubsetDataset
 - <https://github.com/pytorch/data>
 - <https://github.com/szymonmaszke/torchdatasets>

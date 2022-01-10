@@ -3,3 +3,4 @@ Sources are Torch Datasets that take as input things that are not Torch Datasets
 """
 
 from .pandas import DataFrameDataset
+from .sequence import SequenceDataset
