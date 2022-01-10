@@ -16,6 +16,7 @@ class DatasetDescription(Generic[E, DS], ABC):
     Description of a dataset, with functionality to download it, 
     information about common splits, and functionality to load specific splits
     and parts.
+    TODO: Maybe add description of the shape of the data or the labels.
     """
 
     @abstractmethod
