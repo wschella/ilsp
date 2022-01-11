@@ -108,7 +108,7 @@ class Dataset(Generic[E, SELF], ABC, Iterable[E], Sized):
         pass
 
     @abstractmethod
-    def enumerate_dict(self, key: str) -> Dataset[E, SELF]:
+    def enumerate_dict(self, key: str = "index") -> Dataset[E, SELF]:
         pass
 
     @abstractmethod

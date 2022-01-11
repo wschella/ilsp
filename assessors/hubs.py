@@ -8,7 +8,7 @@ import assessors.datasets as datasets
 class SystemHub():
     systems: Dict[str, Dict[str, Type[ModelDefinition]]] = {
         'mnist': {
-            # "default": models.MNISTDefault,
+            "default": models.mnist.MNISTDefault,
         },
         'cifar10': {
             # "default": models.CIFAR10Default,
