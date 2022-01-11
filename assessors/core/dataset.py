@@ -62,10 +62,6 @@ class Dataset(Generic[E, SELF], ABC, Iterable[E], Sized):
         pass
 
     @abstractmethod
-    def __next__(self):
-        pass
-
-    @abstractmethod
     def save(self, dest: Path) -> None:
         """
         Save the dataset to the given destination.
@@ -112,21 +108,7 @@ class Dataset(Generic[E, SELF], ABC, Iterable[E], Sized):
         pass
 
     @abstractmethod
-    def shuffle(self) -> Dataset[E, SELF]:
-        """
-        Shuffle the dataset.
-        """
-        pass
-
-    @abstractmethod
-    def unique(self) -> Dataset[E, SELF]:
-        """
-        Return a dataset with all duplicate elements removed.
-        """
-        pass
-
-    @abstractmethod
-    def enumerate_dict(self) -> Dataset[E, SELF]:
+    def enumerate_dict(self, key: str) -> Dataset[E, SELF]:
         pass
 
     @abstractmethod
@@ -148,5 +130,5 @@ class Dataset(Generic[E, SELF], ABC, Iterable[E], Sized):
         pass
 
     @abstractmethod
-    def interleave_with(self, others: List[SELF], cycle_length: int, block_length: int = 1) -> Dataset[E, SELF]:
+    def interleave_with(self, others: List[SELF], block_length: int = 1) -> Dataset[E, SELF]:
         pass
