@@ -39,6 +39,7 @@ gpu  = { cmd = "python scripts/gpu.py" }
 # From packages
 cdc-hello = { script = "assessors.packages.click_dataclass.examples.hello:cli" }
 cdc-path  = { script = "assessors.packages.click_dataclass.examples.path:cli" }
+tdt-test  = { cmd = "pytest --pyargs assessors.packages.torch_datatools " }
 
 [tool.mypy]
 ignore_missing_imports = true

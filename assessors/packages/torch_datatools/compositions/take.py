@@ -20,7 +20,7 @@ class TakeDataset(Dataset[T_co]):
 
     def __getitem__(self, index) -> T_co:
         if index >= len(self) or abs(index) > len(self):
-            out_of_bounds(index, self)
+            raise out_of_bounds(index, self)
 
         if index < 0:
             index = index - len(self.source) + self.count  # type: ignore # e.g. -1 - 70000 + 25

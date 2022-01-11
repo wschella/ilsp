@@ -9,6 +9,7 @@ from .take import TakeDataset
 from .transform import TransformDataset
 from .reference import ReferenceDataset
 from .enumerate import EnumerateDataset
+from .interleave import InterleaveDataset
 
 from .split_by_ratio import split_by_ratio
 from .split_by_count import split_by_count

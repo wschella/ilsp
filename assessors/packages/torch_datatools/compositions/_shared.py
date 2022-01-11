@@ -9,4 +9,4 @@ T_contra = TypeVar('T_contra', contravariant=True)
 
 def out_of_bounds(index, ds: Dataset):
     length = len(ds)  # type: ignore
-    raise ValueError(f"Index {index} is out of bounds for dataset with length {length}")
+    return ValueError(f"Index {index} is out of bounds for dataset with length {length}")

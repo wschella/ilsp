@@ -2,7 +2,7 @@ from typing import *
 
 from torch.utils.data import Dataset
 
-from ._shared import T_co
+from ._shared import T_co, out_of_bounds
 
 
 class InterleaveDataset(Dataset[T_co]):
@@ -22,8 +22,9 @@ class InterleaveDataset(Dataset[T_co]):
     datasets: Sequence[Dataset[T_co]]
 
     block_length: int
+    remainder_start: int
+    remainder_start_ds: int
     remainder_block_length: int
-    last_idx_in_full_block: int
 
     def __init__(
         self,
@@ -35,30 +36,46 @@ class InterleaveDataset(Dataset[T_co]):
         self.block_length = block_length
 
         # Precalculate some values
-        length = len(self.datasets[0])  # type: ignore
         n_datasets = len(self.datasets)
-        n_full_blocks = (length // self.block_length) * n_datasets
-        last_idx_in_full_block = n_full_blocks * self.block_length
-        remainder_size = len(self) - last_idx_in_full_block - 1
-        remainder_block_length = remainder_size // n_datasets
+        ds_length = len(self.datasets[0])  # type: ignore
+        ds_full_blocks = ds_length // block_length
+        total_full_blocks = ds_full_blocks * n_datasets
+        self.remainder_start = total_full_blocks * block_length
+        self.remainder_start_ds = ds_full_blocks * block_length
 
+        remainder_size = len(self) - self.remainder_start
+        remainder_block_length = remainder_size // n_datasets
         self.remainder_block_length = remainder_block_length
-        self.last_idx_in_full_block = last_idx_in_full_block
 
         super().__init__()
 
     def __getitem__(self, index) -> T_co:
-        if index < self.last_idx_in_full_block:
+        if index >= len(self):
+            raise out_of_bounds(index, self)
+
+        if index < 0:
+            index += len(self)
+
+        # The index is in one of the full blocks
+        if index < self.remainder_start:
             block_length = self.block_length
+            offset = 0
+        # The index is in a remainder block
         else:
             block_length = self.remainder_block_length
-            index = index - self.last_idx_in_full_block
+            offset = self.remainder_start_ds
+            index = index - self.remainder_start
 
         block_idx = index // block_length
+        block_idx_ds = block_idx // len(self.datasets)
         dataset_idx = block_idx % len(self.datasets)
-        offset = index % block_length
+        idx_in_block = index % block_length
 
-        item = self.datasets[dataset_idx][block_idx * block_length + offset]
+        item = self.datasets[dataset_idx][
+            offset
+            + block_idx_ds * block_length
+            + idx_in_block
+        ]
         return item
 
     def __len__(self) -> int:
