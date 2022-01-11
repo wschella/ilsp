@@ -7,6 +7,9 @@ Ret = TypeVar('Ret', covariant=True)
 
 
 class TransformDataset(Dataset[Ret], Generic[Arg, Ret]):
+    """
+    A dataset with a transformation applied to each entry.
+    """
     transform: Callable[[Arg], Ret]
     source: Dataset[Arg]
 

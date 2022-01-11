@@ -7,9 +7,12 @@ from .enumerated_dict import EnumeratedDictDataset
 from .skip import SkipDataset
 from .take import TakeDataset
 from .transform import TransformDataset
+from .transform_input import TransformInputDataset
+from .transform_target import TransformTargetDataset
 from .reference import ReferenceDataset
 from .enumerate import EnumerateDataset
 from .interleave import InterleaveDataset
+from .to_device import ToDeviceDataset
 
 from .split_by_ratio import split_by_ratio
 from .split_by_count import split_by_count
