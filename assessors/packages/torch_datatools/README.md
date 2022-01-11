@@ -14,19 +14,22 @@ You should be able to just include this library and use what you need without an
 
 ## Scope
 
-- Nothing domain specific. Mostly things that you would expect to find in functools or itertools, but then snugly in the Torch Dataset API.
 - We only care about map style datasets, e.g. random-access to an entry by index is always possible.
-- Random-acces to an entry is not expensive.
-- We assume indexes are integral for a lot of the compositions.
+  - This means random-acces to an entry is should not be too expensive.
+  - This means some functionality like .filter() or .flat_map() will likely not be available.
+- We do not care about domain specific logic.
+  We fill focus on functionality things that you would expect to find in functools or itertools, but then snugly in the Torch Dataset API.
+- We assume indexes are integral.
+  Functionality might work with non-integral indexes, but it is never tested.
 - We assume indexes go from 0 to len(dataset) without holes.
 
 ## Potential upcoming features
 
 - Compositions
-  - [ ] Interleave
-  - [ ] Reference
+  - [ ] Reexport Torch's ConcatDataset, TensorDataset, and SubsetDataset
   - [ ] Shuffle
   - [ ] Unique
+  - [ ] Cached
 - Sources
   - [ ] Numpy ndarray
   - [ ] CSV

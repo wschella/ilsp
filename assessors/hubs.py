@@ -1,8 +1,8 @@
 from typing import *
 
-import assessors.models as models
-import assessors.core as core
 from assessors.core import ModelDefinition, DatasetDescription
+import assessors.models as models
+import assessors.datasets as datasets
 
 
 class SystemHub():
@@ -61,9 +61,9 @@ class AssessorHub():
 
 class DatasetHub():
     datasets: Dict[str, DatasetDescription] = {
-        'mnist': core.TorchVisionMNIST,
-        'cifar10': core.TorchVisionCIFAR10,
-        'segment': core.OpenMLSegment,
+        'mnist': datasets.TorchVisionMNIST,
+        'cifar10': datasets.TorchVisionCIFAR10,
+        'segment': datasets.OpenMLSegment,
     }
 
     @staticmethod
