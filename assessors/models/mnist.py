@@ -1,34 +1,48 @@
 from typing import *
 from pathlib import Path
-import logging
 
 import torch
 import torch.nn as nn
-import torch.optim as optim
 import torch.nn.functional as F
 import torch.utils.data as td
-import torchvision.transforms as transforms
-
+from pytorch_lightning import LightningModule, Trainer
+from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.callbacks.progress import TQDMProgressBar
 
 from assessors.core import ModelDefinition, TrainedModel, Restore, Dataset
 from assessors.datasets.torch import TorchDataset
-from assessors.packages import torch_datatools as tools
 
 
-class MNISTDefaultNetwork(nn.Module):
-    def __init__(self) -> None:
+class MNISTDefaultModule(LightningModule):
+    def __init__(self):
         super().__init__()
-        self.hidden = nn.Linear(28 * 28, 128)
-        self.output = nn.Linear(128, 10)
-        self.softmax = nn.Softmax(dim=1)
+        self.hidden = torch.nn.Linear(28 * 28, 128)
+        self.output = torch.nn.Linear(128, 10)
 
-    def forward(self, x: torch.Tensor):  # type: ignore
-        x = torch.flatten(x, 1)  # flatten all dims except batch
-        x = F.relu(self.hidden(x))
-        x = self.softmax(self.output(x))
+    def forward(self, x):  # type: ignore
+        x = x.view(x.size(0), -1)
+        x = self.hidden(x)
+        x = torch.relu(x)
+        x = self.output(x)
+        # x = torch.relu(x)
         # TODO: Check if it works with nllloss / cross-entropy
-        # https://pytorch.org/docs/stable/generated/torch.nn.Softmax.html
+        # https://pytorch.org/docs/stable/generated/torch.nn.Softmax.htm
+        x = torch.softmax(x, dim=1)
         return x
+
+    def training_step(self, batch, batch_nb):  # type: ignore
+        x, y = batch
+        loss = F.cross_entropy(self(x), y)
+        return loss
+
+    def validation_step(self, batch, batch_nb):  # type: ignore
+        x, y = batch
+        y_hat = self(x)
+        loss = F.cross_entropy(y_hat, y)
+        self.log("val_loss", loss)
+
+    def configure_optimizers(self):  # type: ignore
+        return torch.optim.Adam(self.parameters(), lr=0.02)
 
 
 class MNISTDefault(ModelDefinition):
@@ -38,46 +52,24 @@ class MNISTDefault(ModelDefinition):
         return "mnist_default"
 
     def train(self, dataset: Dataset, validation: Dataset, restore: Restore) -> TrainedModel:
-        if not torch.cuda.is_available():
-            logging.warn('Using CPU, this will be slow')
-        # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         train_ds: td.Dataset = cast(TorchDataset, dataset).ds
-        # train_ds = tools.compositions.TransformInputDataset(train_ds, lambda x: x / 255.0)
-        # train_ds = tools.compositions.ToDeviceDataset(train_ds, device="cuda:0")
+        train_loader = td.DataLoader(
+            train_ds, batch_size=256, shuffle=True, drop_last=True,
+            pin_memory=True, num_workers=12)
+
         val_ds: td.Dataset = cast(TorchDataset, validation).ds
-        # val_ds = tools.compositions.TransformInputDataset(val_ds, lambda x: x / 255.0)
+        val_loader = td.DataLoader(
+            val_ds, batch_size=512,
+            pin_memory=True, num_workers=12)
 
-        # TODO: set pin_memory
-        train_loader = td.DataLoader(train_ds, batch_size=32, shuffle=True, pin_memory=True)
-        val_loader = td.DataLoader(val_ds, batch_size=32, pin_memory=True)
-
-        model = MNISTDefaultNetwork().cuda()
-        criterion = nn.CrossEntropyLoss()
-        optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
-
-        for epoch in range(self.epochs):
-
-            for _batch_idx, (data, target) in enumerate(train_loader):
-                data, target = data.cuda(), target.cuda()
-                optimizer.zero_grad()
-                output = model(data)
-                loss = criterion(output, target)
-                loss.backward()
-                optimizer.step()
-
-            with torch.no_grad():
-                val_loss = 0.0
-                val_acc = 0.0
-                for _batch_idx, (data, target) in enumerate(val_loader):
-                    data, target = data.cuda(), target.cuda()
-                    output = model(data)
-                    val_loss += criterion(output, target).item()
-                    val_acc += (output.argmax(dim=1) == target).sum().item()
-
-                val_loss /= len(val_loader)
-                val_acc /= len(val_loader)
-                print(
-                    f"Epoch {epoch}: loss={loss.item():.4f}, val_loss={val_loss:.4f}, val_acc={val_acc:.4f}")  # type: ignore
+        model = MNISTDefaultModule()
+        trainer = Trainer(
+            max_epochs=self.epochs,
+            gpus=1,
+            logger=TensorBoardLogger('./artifacts/lightning_logs'),
+            callbacks=[TQDMProgressBar(refresh_rate=20)],
+        )
+        trainer.fit(model, train_loader, val_loader)
 
         return TorchTrainedModel(model)
 
@@ -96,7 +88,7 @@ class TorchTrainedModel(TrainedModel):
         super().__init__()
 
     def save(self, path: Path) -> None:
-        torch.save(self.model.state_dict(), path)
+        torch.save(self.model.state_dict(), path / "model.pt")
 
     def loss(self, y_true, y_pred) -> float:
         raise NotImplementedError()
