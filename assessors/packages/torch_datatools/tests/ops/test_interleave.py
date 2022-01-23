@@ -1,5 +1,5 @@
 from assessors.packages.torch_datatools.sources import SequenceDataset
-from assessors.packages.torch_datatools.compositions import InterleaveDataset
+from assessors.packages.torch_datatools.ops import InterleaveDataset
 
 Seq = SequenceDataset
 

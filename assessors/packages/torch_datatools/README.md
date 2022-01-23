@@ -26,7 +26,7 @@ You should be able to just include this library and use what you need without an
 ## Potential upcoming features
 
 - Compositions
-  - [ ] Reexport Torch's ConcatDataset, TensorDataset, and SubsetDataset
+  - [ ] Reexport Torch's ConcatDataset, TensorDataset, and SubsetDataset and random_split
   - [ ] Shuffle
   - [ ] Unique
   - [ ] Cached

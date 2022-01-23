@@ -1,6 +1,7 @@
 """
-Compositions are either Torch Datasets that take as input other Torch Datasets,
+Ops are either Torch Datasets that take as input other Torch Datasets,
 or functions that return multiple Torch Datasets (and similarly take in Torch Datasets).
+I.e. they are operations under which the set of Torch Datasets is closed.
 """
 
 from .enumerated_dict import EnumeratedDictDataset

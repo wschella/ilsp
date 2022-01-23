@@ -4,7 +4,7 @@ import math
 from torch.utils.data import Dataset
 
 from ._shared import T_co
-from ..compositions import TakeDataset, SkipDataset
+from ..ops import TakeDataset, SkipDataset
 
 
 def split_by_ratio(ds: Dataset[T_co], ratio: float) -> Tuple[Dataset[T_co], Dataset[T_co]]:
