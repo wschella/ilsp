@@ -1,0 +1,22 @@
+name: pp
+channels:
+  - pytorch
+
+# These are our environment dependencies, which are pinned to versions compatible
+# with the libraries defined in pyproject.toml, which mostly matters for the like 
+# of tensorflow and torch.
+# Everything we can, we manage with poetry.
+# [0] https://www.tensorflow.org/install/source#gpu
+# [1] https://pytorch.org/get-started/locally/
+dependencies:
+  - python=3.9
+  - poetry=1.1
+  - cudatoolkit=11.3
+
+  # We manage torch here, because we can't access torch+cu113 through poetry.
+  # NOTE: This might give problems with dependencies (e.g. numpy) also being
+  # managed by poetry.
+  # https://github.com/python-poetry/poetry/issues/1391
+  - pytorch=1.11
+  - torchvision=0.12.0
+  - torchdata=0.3.0
