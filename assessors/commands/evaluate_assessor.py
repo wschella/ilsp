@@ -7,7 +7,7 @@ import os
 import click
 from tqdm import tqdm
 
-from assessors.core import ModelDefinition, PredictionRecord, TypedPredictionRecord, AssessorPredictionRecord, LeanPredictionRecord
+from assessors.core import Model, PredictionRecord, TypedPredictionRecord, AssessorPredictionRecord, LeanPredictionRecord
 from assessors.commands.report import generate_report
 from assessors.utils.cli import CommandArguments
 from assessors.hubs import AssessorHub, DatasetHub
@@ -51,10 +51,10 @@ def evaluate_assessor(ctx, **kwargs):
         click.confirm(f"The file {args.output_path} already exists. Overwrite?", abort=True)
 
     # Load assessor model
-    model_def: ModelDefinition = AssessorHub.get(args.dataset_name, args.model)()
+    model: Model = AssessorHub.get(args.dataset_name, args.model)()
     model_path = Path(
         f"artifacts/assessors/{args.dataset_name}/{args.model}/{args.identifier}/")
-    model = model_def.restore_from(model_path)
+    model.restore_from(model_path)
 
     # Load & mangle dataset
     _ds = None

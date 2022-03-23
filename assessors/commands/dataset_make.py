@@ -4,7 +4,7 @@ from pathlib import *
 
 import click
 
-from assessors.core import ModelDefinition, PredictionRecord
+from assessors.core import Model, PredictionRecord
 from assessors.core import Dataset, DatasetDescription
 from assessors.utils import dataset_extra as dse
 from assessors.utils.cli import CommandArguments
@@ -38,7 +38,7 @@ def dataset_make(ctx, **kwargs):
     """
     args = MakeKFoldArgs(parent=ctx.obj, **kwargs).validated()
 
-    model_def: ModelDefinition = SystemHub.get(args.dataset, args.model)()
+    model: Model = SystemHub.get(args.dataset, args.model)()
     dataset_desc: DatasetDescription = DatasetHub.get(args.dataset)
 
     dataset: Dataset = dataset_desc.load_all()
@@ -57,9 +57,7 @@ def dataset_make(ctx, **kwargs):
     for i, (_train, test) in enumerate(dse.k_folds(dataset, n_folds)):
         for repeat in range(args.repeats):
             path = dir / f"fold_{i}" / f"model_{repeat}"
-            model = model_def.restore_from(path)
-            if model is None:
-                raise ValueError(f"No model found at {path}")
+            model.restore_from(path)
 
             # We need to keep a reference to the model because otherwise TF
             # prematurely deletes it.

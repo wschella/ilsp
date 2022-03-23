@@ -1,49 +1,26 @@
 from __future__ import annotations
-from dataclasses import dataclass
 from typing import *
-from abc import ABC, abstractmethod
 from pathlib import Path
+from dataclasses import dataclass
+from abc import ABC, abstractmethod
+
+from .dataset import Dataset
 
 
-class ModelDefinition(ABC):
-
+class Model(ABC):
     @abstractmethod
     def name(self) -> str:
+        """
+        The name of the model.
+        """
         pass
 
     @abstractmethod
-    def train(self, dataset, validation, restore: Restore) -> TrainedModel:
+    def train(self, dataset: Dataset, validation: Dataset, restore: Restore, **kwargs):
         pass
 
-    @abstractmethod
-    def try_restore_from(self, path: Path) -> Optional[TrainedModel]:
-        pass
-
-    def restore_from(self, path: Path) -> TrainedModel:
-        model = self.try_restore_from(path)
-        if model is None:
-            raise ValueError(f'Model not found at {path}')
-        return model
-
-    @abstractmethod
-    def score(self, y_true, y_pred) -> float:
-        pass
-
-# TODO: Add assessor model definition, wich has a specific init or set syst_id and syst_features input size
-
-
-class TrainedModel(ABC):
-    @abstractmethod
-    def save(self, path: Path) -> None:
-        pass
-
-    @abstractmethod
-    def loss(self, y_true, y_pred) -> float:
-        pass
-
-    @abstractmethod
-    def score(self, y_true, y_pred) -> float:
-        pass
+    def __call__(self, entry, **kwargs):
+        return self.predict(entry, **kwargs)
 
     @abstractmethod
     def predict(self, entry, **kwargs) -> Any:
@@ -53,9 +30,58 @@ class TrainedModel(ABC):
     def predict_all(self, dataset, **kwargs) -> Sequence[Any]:
         pass
 
-    def __call__(self, entry, **kwargs):
-        return self.predict(entry, **kwargs)
+    @abstractmethod
+    def score(self, y_true, y_pred) -> float:
+        """
+        Calculate the score for the given output and target.
+        E.g. 0 or 1 for a classification task.
+        TODO: This should be moved somewhere else.
+        """
+        pass
 
+    @abstractmethod
+    def loss(self, y_true, y_pred) -> float:
+        """
+        Calculate the loss for the given output and target, with the loss function
+        used to train this model.
+        """
+        pass
+
+    @abstractmethod
+    def save(self, path: Path) -> None:
+        """
+        Save all learnable parameters and all learning state to disk.
+        """
+        pass
+
+    @abstractmethod
+    def try_restore_from(self, path: Path) -> Optional[Tuple[()]]:
+        """
+        Try to restore saved parameters from disk.
+
+        Returns
+        -------
+        None or empty tuple
+            If None, then no parameters were restored.
+        """
+        pass
+
+    def restore_from(self, path: Path) -> Tuple[()]:
+        """
+        Restore saved parameters from disk or error if that fails.
+
+        Returns
+        -------
+        empty tuple
+            Returns the empty tuple if parameters and state were restored successfully.
+        """
+        result = self.try_restore_from(path)
+        if result is None:
+            raise ValueError(f'Model not found at {path}')
+        return ()
+
+
+# TODO: Add assessor model definition, wich has a specific init or set syst_id and syst_features input size
 
 @dataclass
 class Restore:

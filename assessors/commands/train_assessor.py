@@ -5,7 +5,7 @@ from pathlib import Path
 
 import click
 
-from assessors.core import ModelDefinition, Restore, Dataset, PredictionRecord
+from assessors.core import Model, Restore, Dataset, PredictionRecord
 from assessors.hubs import DatasetHub, AssessorHub
 from assessors.application import cli
 from assessors.commands import evaluate_assessor
@@ -43,7 +43,7 @@ def train_assessor(ctx, **kwargs):
     Train the assessor model for dataset at DATASET.
     """
     args = TrainAssessorArgs(parent=ctx.obj, **kwargs).validated()
-    model_def: ModelDefinition = AssessorHub.get(args.dataset_name, args.model)()
+    model: Model = AssessorHub.get(args.dataset_name, args.model)()
 
     n_systems = 5
 
@@ -64,7 +64,7 @@ def train_assessor(ctx, **kwargs):
     (train, test) = supervised.split_relative(-0.25)
     logging.info(f'Train size: {len(train)}, test size: {len(test)}')
     logging.info(f'Training {model_def.name()}')
-    model = model_def.train(train, validation=test, restore=Restore(path, args.restore))
+    model.train(train, validation=test, restore=Restore(path, args.restore))
 
     if args.save:
         model.save(path)

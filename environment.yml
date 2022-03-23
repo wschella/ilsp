@@ -18,7 +18,7 @@ dependencies:
 
   # From >= 60 onward, poetry triggers a nasty deprecation warning in setuptools,
   # so we pin it here to avoid that.
-  - setuptools=59.4 
+  - setuptools=59.4
 
   - cudnn=8.1
   - cudatoolkit=11.3

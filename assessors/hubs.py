@@ -1,12 +1,12 @@
 from typing import *
 
-from assessors.core import ModelDefinition, DatasetDescription
+from assessors.core import Model, DatasetDescription
 import assessors.models as models
 import assessors.datasets as datasets
 
 
 class SystemHub():
-    systems: Dict[str, Dict[str, Type[ModelDefinition]]] = {
+    systems: Dict[str, Dict[str, Type[Model]]] = {
         'mnist': {
             "default": models.mnist.MNISTDefault,
         },
@@ -20,7 +20,7 @@ class SystemHub():
     }
 
     @staticmethod
-    def get(dataset: str, model: str) -> Type[ModelDefinition]:
+    def get(dataset: str, model: str) -> Type[Model]:
         return SystemHub.systems[dataset][model]
 
     @staticmethod
@@ -33,7 +33,7 @@ class SystemHub():
 
 
 class AssessorHub():
-    assessors: Dict[str, Dict[str, Type[ModelDefinition]]] = {
+    assessors: Dict[str, Dict[str, Type[Model]]] = {
         'mnist': {
             # "default": models.MNISTAssessorDefault,
         },
@@ -47,7 +47,7 @@ class AssessorHub():
     }
 
     @staticmethod
-    def get(dataset: str, model: str) -> Type[ModelDefinition]:
+    def get(dataset: str, model: str) -> Type[Model]:
         return AssessorHub.assessors[dataset][model]
 
     @staticmethod

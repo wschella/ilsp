@@ -6,7 +6,7 @@ import click
 import numpy as np
 import sklearn.metrics as metrics
 
-from assessors.core import ModelDefinition, Dataset
+from assessors.core import Model, Dataset
 from assessors.utils.cli import CommandArguments
 from assessors.hubs import SystemHub, DatasetHub
 from assessors.application import cli, CLIArgs
@@ -33,10 +33,10 @@ def evaluate_system(ctx, **kwargs):
     args = EvaluateSystemArgs(parent=ctx.obj, **kwargs).validated()
 
     # Load system
-    model_def: ModelDefinition = SystemHub.get(args.dataset, args.model)()
+    model: Model = SystemHub.get(args.dataset, args.model)()
     # TODO: Fix
     model_path = Path(f"artifacts/models/{args.dataset}/{args.model}/kfold_5/4")
-    model = model_def.restore_from(model_path)
+    model.restore_from(model_path)
 
     # Load & mangle dataset
     _ds: Dataset = DatasetHub.get(args.dataset).load_all()
