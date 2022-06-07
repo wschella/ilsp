@@ -1,21 +1,10 @@
-# Assessor models
+# Assessor models & and Performance Prediction (PP)
 
 ## Running
 
 The entry point to the experiments is "assessors/main.py". Use it by running `poe run` (after setup is done of course). Check the available options with `poe run --help`.
 Another option is invoking Python directly `python -m assessors.main --help`
 
-### Example
-
-TODO: Outdated
-
-```shell
-poe run dataset-download mnist
-poe run train-kfold mnist -m default
-poe run dataset-make artifacts/models/mnist/default/kfold_5/ -m default # This will find the previously trained models
-poe run train-assessor artifacts/datasets/mnist/default/kfold_5/ -m mnist_default
-poe run eval-assessor artifacts/datasets/mnist/default/kfold_5/ -m mnist_default
-```
 
 ## Organisation
 
